@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 
+from dialux import norma as _norma  # noqa: E402
 from dialux.cad.plano import leer_plano as _leer_plano  # noqa: E402
 
 mcp = MCPServer(
@@ -34,6 +35,33 @@ def leer_plano(ruta: str) -> dict:
     ruta: ruta absoluta al fichero en esta máquina.
     """
     return _leer_plano(ruta)
+
+
+@mcp.tool()
+def requisitos_norma(referencia: str) -> dict:
+    """Lo que exige la UNE-EN 12464-1:2022 para una referencia de tabla, p. ej. "34.7".
+
+    Se lee de la copia de la norma del alumno (PDF en material/norma/). Devuelve el tipo de área,
+    Ēm requerido y Ēm modificado (lx), Uo, Ra, RUGL, Ēm,z, Ēm,pared y Ēm,techo, los requisitos
+    específicos y 'fuente' con la tabla, la fila y la página del PDF: cítala siempre, para que el
+    alumno pueda comprobarlo. Un valor None es una casilla con "–" en la norma (no se exige).
+
+    Ēm requerido es el mínimo; Ēm modificado aplica los modificadores de contexto del apartado
+    5.3.3. No elijas uno por tu cuenta: si el enunciado no dice cuál, pregunta al alumno.
+    Si hay 'error', no rellenes los valores de memoria: dile que consulte la página del PDF.
+    """
+    return _norma.requisitos(referencia)
+
+
+@mcp.tool()
+def buscar_en_norma(texto: str) -> list[dict]:
+    """Busca en las tablas de la UNE-EN 12464-1:2022 las filas cuyo tipo de área o tabla contienen
+    todas las palabras dadas (sin distinguir tildes ni mayúsculas), p. ej. "enfermeria" o "oficinas".
+
+    Sirve para encontrar la referencia cuando el enunciado describe el local sin dar el número.
+    Si hay varias candidatas, enséñaselas al alumno y que elija él: no decidas la fila.
+    """
+    return _norma.buscar(texto)
 
 
 if __name__ == "__main__":

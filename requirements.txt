@@ -1,0 +1,6 @@
+mcp==2.2.0
+ezdxf==1.4.4
+shapely==2.1.2
+pdfplumber==0.11.10
+# solo para las pruebas
+pytest==9.1.1

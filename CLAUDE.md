@@ -24,9 +24,10 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
    virtual, así que:
    - Rutas siempre con `pathlib`, nunca con `/` escrito a mano ni rutas absolutas del Mac.
    - Nada que solo exista en macOS (ni `brew`, ni comandos de shell de Unix desde Python).
-   - El entorno **no se copia**: se recrea en cada máquina desde `requirements.txt`. Como la carpeta
-     se comparte con la VM, el de Windows se llama `.venv-windows`; con el mismo nombre, cada
-     sistema rompería el entorno del otro.
+   - El entorno **no se copia**: se recrea en cada máquina desde `requirements.txt`. El de Windows
+     va en el disco de Windows (`C:\Users\marco\.venvs\mcp_dialux`), nunca dentro de la carpeta
+     compartida: sobre una unidad de red la instalación es lenta y falla, y con el mismo nombre
+     que el del Mac cada sistema rompería el del otro.
    - Lo que solo tiene sentido en Windows (automatizar la ventana de DIALux) va aislado en su
      propio módulo y se importa solo en Windows, para que el resto arranque en el Mac.
 
@@ -59,7 +60,9 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
   **En macOS `ezdxf` no lo encuentra solo**: hay que darle la ruta
   `/Applications/ODAFileConverter.app/Contents/MacOS/ODAFileConverter` con
   `ezdxf.options.set("odafc-addon", "unix_exec_path", …)`. Lo hace `convertir.py`. En Windows lo
-  busca en `Program Files\ODA\ODAFileConverter*`: **sin probar todavía en la VM**.
+  busca en `Program Files\ODA\ODAFileConverter*`: **comprobado el 16/9/2026 en la VM**, lo
+  encuentra en `C:\Program Files\ODA\ODAFileConverter 27.1.0\` y convierte el parcial desde
+  cero (313 471 bytes; en el Mac 313 468, la diferencia es la cabecera).
 - **El enunciado va DENTRO del plano**, como texto: altura de sala, espesor de pared, altura del
   plano de trabajo, zona marginal, factor de mantenimiento, reflectancias y tipo de actividad. Es
   la fuente de datos del ejercicio; no hay que pedírselo aparte a Marcos.
@@ -89,12 +92,18 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
 - **SDK de MCP 2.x** (`mcp==2.2.0`): `FastMCP` ya no existe con ese nombre, ahora es
   `from mcp.server.mcpserver import MCPServer`. Los ejemplos de internet con
   `mcp.server.fastmcp` son de la versión 1 y no arrancan.
+- La versión instalada en la VM es **DIALux evo 14.0**. Qué formatos importa (STF, IFC…) se
+  comprueba contra esa versión.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
-  - ODA File Converter solo sale para Windows x64: en ARM corre emulado. Sin probar.
-  - Si alguna librería no trae versión para Windows ARM (`shapely` es la candidata), instalar el
-    Python **x64** de python.org, que Windows 11 ARM también emula.
-  - El proyecto se comparte con Windows por carpeta compartida, no copiándolo. La carpeta
-    compartida necesita VMware Tools instalado en Windows (pendiente a 16/9/2026).
+  - Python en Windows es **3.14 ARM64**, y todo `requirements.txt` se instala con él (shapely
+    incluido). Las 3 pruebas pasan en la VM (16/9/2026).
+  - ODA File Converter solo sale para Windows x64: en ARM corre emulado, y funciona.
+  - Las carpetas compartidas de VMware no aparecen en esta VM aunque VMware Tools está instalado.
+    **El proyecto se comparte por SMB desde el Mac** (16/9/2026): en Windows es la unidad `Z:`
+    = `\\192.168.110.1\MCP_Dialux`. Esa IP es el Mac en la red NAT de VMware (vmnet8), así que
+    no cambia al cambiar de wifi. Se conectó con
+    `net use Z: \\192.168.110.1\MCP_Dialux /user:marcos /persistent:yes`.
+  - El usuario de Windows es `marco` (sin s), el del Mac `marcos`.
 
 ---
 

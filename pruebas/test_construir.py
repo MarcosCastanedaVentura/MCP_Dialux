@@ -24,21 +24,13 @@ def test_sin_la_altura_no_se_escribe_nada(tmp_path):
     assert not list(tmp_path.glob("*.stf"))
 
 
-def test_las_dos_plantas_van_en_un_unico_stf(tmp_path):
-    # Con un fichero por planta, DIALux no dejaba importar las dos en el mismo proyecto.
+def test_junio_da_un_stf_por_planta(tmp_path):
     salida = plano_a_stf(_plano("ExamenFinal-Junio-Dialux-26.dwg"), altura_m=3,
                          carpeta_destino=tmp_path)
     assert salida["escrito"] and salida["cotas"] == "6 de 6"
     assert [p["planta"] for p in salida["plantas"]] == ["SEGUNDA PLANTA", "TERCERA PLANTA"]
     assert len(salida["plantas"][0]["estancias"]) == 5
-    assert len(list(tmp_path.glob("*.stf"))) == 1
-
-    texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
-    assert "NrRooms=7" in texto
-    # El ascensor está en las dos plantas: sin distinguirlos habría dos salas con el mismo nombre.
-    assert "Name=Ascensor (segunda planta)" in texto
-    assert "Name=Ascensor (tercera planta)" in texto
-    assert any("varias plantas" in a for a in salida["avisos"])
+    assert len(list(tmp_path.glob("*.stf"))) == 2
 
     # Lo que el STF no lleva sale como tarea a mano, con los números ya puestos.
     archivos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Archivos")

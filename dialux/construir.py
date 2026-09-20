@@ -5,12 +5,9 @@ Junta lo que ya hay: `leer_plano` saca las salas con sus medidas y los datos del
 
 Dos decisiones:
 
-- **Un solo fichero STF, aunque el edificio tenga varias plantas** (pedido por Marcos el
-  20/9/2026: con un fichero por planta, DIALux no le dejaba importar las dos en el mismo
-  proyecto). Ojo con lo que esto significa: **el STF no guarda a qué nivel está cada sala**, solo
-  su contorno y su altura, y las plantas de un edificio ocupan el mismo sitio en el suelo. Según
-  la documentación de DIAL, las salas que se solapan se importan en edificios separados. Cuando
-  hay más de una planta se avisa en `avisos`.
+- **Un fichero por planta.** STF no tiene el concepto de planta y `leer_plano` da las coordenadas
+  de cada planta desde su propia esquina, así que meter dos plantas en el mismo fichero las
+  pondría una encima de otra en el mismo suelo. En DIALux se importa cada una por separado.
 - **Lo que el STF no lleva, se dice con números.** La zona marginal y las columnas no se han
   conseguido escribir en el STF (no hay ejemplo real del que copiar el nombre de esos campos, ver
   `stf.py`), y Marcos prefiere ponerlas a mano en DIALux antes que cambiar de versión. Así que
@@ -57,8 +54,6 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
         avisos.append("Ninguna cota del plano cuadra con las salas reconstruidas: NO uses este "
                       "edificio sin mirarlo, puede estar mal leído.")
 
-    varias_plantas = len(plano["plantas"]) > 1
-    repetidos = _nombres_repetidos(plano["plantas"])
     plantas = []
     for planta in plano["plantas"]:
         estancias = []
@@ -72,12 +67,8 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 plano_trabajo = 0.0
                 avisos.append(f"{sala['nombre']}: el plano no da altura del plano de trabajo; "
                               "se deja en el suelo (0 m).")
-            nombre = sala["nombre"]
-            if nombre in repetidos:
-                # "Ascensor" está en las dos plantas: sin esto, dos salas iguales en la lista.
-                nombre = f"{nombre} ({planta['nombre'].lower()})"
             estancias.append(stf.Estancia(
-                nombre=nombre,
+                nombre=sala["nombre"],
                 contorno=[tuple(p) for p in sala["contorno_m"]],
                 altura_m=altura,
                 plano_trabajo_m=plano_trabajo,
@@ -92,42 +83,31 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 "avisos": avisos,
                 "como_seguir": "Pásame esos datos (por ejemplo altura_m=3) y lo vuelvo a generar."}
 
-    if varias_plantas:
-        avisos.append(
-            "El edificio tiene varias plantas y el STF no guarda a qué nivel está cada sala, así "
-            "que van todas en un fichero con su contorno real. Al importar, DIALux puede dejarlas "
-            "en el mismo suelo o repartirlas en edificios separados: coloca tú cada planta en su "
-            "nivel.")
+    escritos = []
+    for i, planta in enumerate(plantas, start=1):
+        if not planta["estancias"]:
+            continue
+        sufijo = f"-{i}" if len(plantas) > 1 else ""
+        ruta = stf.escribir(planta["estancias"], carpeta / f"{base}{sufijo}",
+                            proyecto=planta["nombre"])
+        escritos.append({
+            "planta": planta["nombre"],
+            "ruta_stf": str(ruta),
+            **({"a_mano": planta["a_mano"]} if planta["a_mano"] else {}),
+            "estancias": [{"nombre": e.nombre, "altura_m": e.altura_m,
+                           "plano_trabajo_m": e.plano_trabajo_m,
+                           "vertices": len(e.contorno)} for e in planta["estancias"]],
+        })
 
-    todas = [e for planta in plantas for e in planta["estancias"]]
-    ruta = stf.escribir(todas, carpeta / base, proyecto=Path(ruta_plano).stem)
-    escritos = [{
-        "planta": planta["nombre"],
-        **({"a_mano": planta["a_mano"]} if planta["a_mano"] else {}),
-        "estancias": [{"nombre": e.nombre, "altura_m": e.altura_m,
-                       "plano_trabajo_m": e.plano_trabajo_m,
-                       "vertices": len(e.contorno)} for e in planta["estancias"]],
-    } for planta in plantas if planta["estancias"]]
-
-    return {"fichero": plano["fichero"], "escrito": True, "ruta_stf": str(ruta),
-            "plantas": escritos,
+    return {"fichero": plano["fichero"], "escrito": True, "plantas": escritos,
             "cotas": plano["cotas"]["cuadran"], "avisos": avisos,
-            "como_importar": "En DIALux evo: Archivo → Importar → Archivo STF…, y se elige el "
-                             "único fichero. El edificio y la planta los nombra DIALux "
-                             "('STF Building'): se renombran con doble clic.",
+            "como_importar": "En DIALux evo: Archivo → Importar → Archivo STF…, un fichero por "
+                             "planta. El edificio y la planta los nombra DIALux ('STF Building'): "
+                             "se renombran con doble clic.",
             "que_falta_por_poner": "Lo de 'a_mano' NO va dentro del STF: la zona marginal se pone "
                                    "en la superficie de cálculo de cada sala, y las columnas como "
                                    "objeto en la posición indicada (su centro, en metros desde la "
                                    "esquina de la planta)."}
-
-
-def _nombres_repetidos(plantas: list[dict]) -> set[str]:
-    vistos: set[str] = set()
-    repetidos: set[str] = set()
-    for planta in plantas:
-        for sala in planta["salas"]:
-            (repetidos if sala["nombre"] in vistos else vistos).add(sala["nombre"])
-    return repetidos
 
 
 def _a_mano(planta: dict) -> list[dict]:

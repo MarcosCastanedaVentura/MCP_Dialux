@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 
 from dialux import norma as _norma  # noqa: E402
+from dialux.construir import plano_a_stf as _plano_a_stf  # noqa: E402
 from dialux.cad.plano import leer_plano as _leer_plano  # noqa: E402
 
 mcp = MCPServer(
@@ -35,6 +36,26 @@ def leer_plano(ruta: str) -> dict:
     ruta: ruta absoluta al fichero en esta máquina.
     """
     return _leer_plano(ruta)
+
+
+@mcp.tool()
+def construir_edificio(ruta_plano: str, altura_m: float | None = None,
+                       alturas: dict[str, float] | None = None) -> dict:
+    """Construye el edificio del plano y escribe un fichero STF por planta para DIALux evo.
+
+    Cada sala entra con su contorno real, su nombre, su altura y su plano de trabajo. El alumno
+    lo importa con Archivo → Importar → Archivo STF… y compara con su propia solución.
+
+    ruta_plano: ruta al .dwg o .dxf del ejercicio.
+    altura_m: altura de las salas cuando el plano no la dice. Pregúntasela al alumno; no la
+      supongas. Si falta, la herramienta no escribe nada y devuelve 'faltan'.
+    alturas: altura distinta para salas concretas, por nombre, p. ej. {"Oficina": 3.5}.
+
+    Lee siempre 'avisos' y cuéntaselos: ahí van las columnas que el STF todavía no lleva y las
+    salas sin plano de trabajo. Y comprueba 'cotas': si las cotas del plano no cuadran, avísale
+    antes de que use el edificio.
+    """
+    return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas)
 
 
 @mcp.tool()

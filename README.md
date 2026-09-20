@@ -10,6 +10,7 @@ Herramientas disponibles:
 | `leer_plano` | DWG/DXF → plantas, salas, medidas, columnas y los datos del enunciado escritos en el plano, comprobados contra las cotas |
 | `requisitos_norma` | Referencia de tabla ("34.7") → Ēm, Uo, Ra, RUGL… de la UNE-EN 12464-1:2022, con tabla, fila y página |
 | `buscar_en_norma` | Texto ("enfermería") → filas de la norma que encajan |
+| `construir_edificio` | DWG/DXF → un fichero STF por planta, listo para importar en DIALux evo |
 
 ## Requisitos
 

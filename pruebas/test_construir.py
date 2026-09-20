@@ -32,8 +32,12 @@ def test_junio_da_un_stf_por_planta(tmp_path):
     assert len(salida["plantas"][0]["estancias"]) == 5
     assert len(list(tmp_path.glob("*.stf"))) == 2
 
-    # Las columnas todavía no se escriben: hay que decirlo, no callarlo.
-    assert any("columna" in a for a in salida["avisos"])
+    # Lo que el STF no lleva sale como tarea a mano, con los números ya puestos.
+    archivos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Archivos")
+    assert archivos["zona_marginal_m"] == 0.2
+    assert archivos["columnas"][0]["ancho_x_m"] == 0.657
+    banos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Baños")
+    assert banos["zona_marginal_m"] == 0.1 and "columnas" not in banos
 
     oficina = salida["plantas"][1]["estancias"][0]
     assert oficina["nombre"].startswith("Oficina") and oficina["plano_trabajo_m"] == 0.85

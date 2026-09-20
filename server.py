@@ -51,9 +51,12 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
       supongas. Si falta, la herramienta no escribe nada y devuelve 'faltan'.
     alturas: altura distinta para salas concretas, por nombre, p. ej. {"Oficina": 3.5}.
 
-    Lee siempre 'avisos' y cuéntaselos: ahí van las columnas que el STF todavía no lleva y las
-    salas sin plano de trabajo. Y comprueba 'cotas': si las cotas del plano no cuadran, avísale
-    antes de que use el edificio.
+    Cuéntale SIEMPRE lo que venga en 'a_mano': son la zona marginal y las columnas, que el STF no
+    lleva y hay que poner en DIALux después de importar. Van con el valor y la posición ya
+    calculados; enséñaselos sala por sala para que solo tenga que teclearlos.
+
+    Lee también 'avisos', y comprueba 'cotas': si las cotas del plano no cuadran, avísale antes
+    de que use el edificio.
     """
     return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas)
 

@@ -127,6 +127,14 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
     estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
     renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
+- **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
+  exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
+  ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres
+  candidatos en `material/pruebas_stf/` (pruebaA y pruebaB), sin probar todavía.
+  **Decisión de Marcos (20/9/2026): no va a instalar DIALux 4 para sacar la especificación;
+  prefiere poner esas dos cosas a mano, que son rápidas.** Por eso `construir_edificio` las
+  devuelve en `a_mano` con el valor y la posición calculados. Si algún día aparece el nombre
+  bueno del campo, se añade a `stf.py` y se quita de ahí.
 - **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
   `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
   y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:

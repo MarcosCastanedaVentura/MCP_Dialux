@@ -8,6 +8,10 @@ Dos decisiones:
 - **Un fichero por planta.** STF no tiene el concepto de planta y `leer_plano` da las coordenadas
   de cada planta desde su propia esquina, así que meter dos plantas en el mismo fichero las
   pondría una encima de otra en el mismo suelo. En DIALux se importa cada una por separado.
+  El 20/9/2026 se probó lo contrario —todo en un fichero, porque DIALux no dejaba importar dos
+  plantas en el mismo proyecto— y Marcos lo descartó el mismo día por liarse más. Si vuelve a
+  salir el tema: el problema no es cuántos ficheros, es que el STF no guarda el NIVEL de cada
+  sala.
 - **Lo que el STF no lleva, se dice con números.** La zona marginal y las columnas no se han
   conseguido escribir en el STF (no hay ejemplo real del que copiar el nombre de esos campos, ver
   `stf.py`), y Marcos prefiere ponerlas a mano en DIALux antes que cambiar de versión. Así que

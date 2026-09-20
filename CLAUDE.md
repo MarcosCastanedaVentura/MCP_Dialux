@@ -109,6 +109,14 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   Espacios interiores DX4, Archivo de luminarias, Sistema de luz diurna, muebles, imágenes y
   layout. **La vía para construir el edificio es STF**, y las luminarias se pueden meter aparte
   con "Archivo de luminarias" (ahí entrarán los .ldt cuando los haya).
+- **STF comprobado en evo 14 el 20/9/2026**: importa las estancias con su nombre, contorno,
+  altura y plano de trabajo, y las formas en L salen bien. Dos cosas medidas:
+  - **Donde acaba la pared de una sala vecina tiene que haber un vértice.** Un pasillo cuya pared
+    tocaba a dos salas entraba con una diagonal cruzándolo de esquina a esquina; con el vértice
+    en la unión, limpio. Lo hace solo `_vertices_de_vecinos` en `stf.py`.
+  - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
+    estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
+    renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
 - **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
   `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
   y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:

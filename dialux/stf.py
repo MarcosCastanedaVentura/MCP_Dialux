@@ -53,6 +53,39 @@ class Estancia:
                 f"por encima del techo ({self.altura_m} m).")
 
 
+# Distancia por debajo de la cual un vértice de otra sala se considera "sobre" esta pared.
+TOLERANCIA = 0.001  # m
+
+
+def _vertices_de_vecinos(estancias: list[Estancia]) -> None:
+    """Parte cada pared por los vértices de las salas vecinas que caen encima.
+
+    Medido en DIALux evo 14 el 20/9/2026: con tres salas en un rectángulo, el pasillo cuya pared
+    inferior tocaba a la oficina Y a los aseos se importaba con una diagonal cruzándolo de esquina
+    a esquina. La forma era correcta; lo que faltaba era un vértice en (8, 6), donde acaba la
+    pared entre las dos salas de abajo. Con ese punto, la planta entra limpia.
+    """
+    ajenos = {p for e in estancias for p in e.contorno}
+    for estancia in estancias:
+        contorno = estancia.contorno
+        nuevo: list[tuple[float, float]] = []
+        for (ax, ay), (bx, by) in zip(contorno, contorno[1:] + contorno[:1]):
+            nuevo.append((ax, ay))
+            dx, dy = bx - ax, by - ay
+            largo2 = dx * dx + dy * dy
+            if largo2 == 0:
+                continue
+            encima = []
+            for (px, py) in ajenos:
+                t = ((px - ax) * dx + (py - ay) * dy) / largo2
+                if not 0 < t < 1:
+                    continue
+                if abs((px - ax) - t * dx) < TOLERANCIA and abs((py - ay) - t * dy) < TOLERANCIA:
+                    encima.append((t, (px, py)))
+            nuevo += [punto for _, punto in sorted(encima)]
+        estancia.contorno = nuevo
+
+
 def _num(valor: float) -> str:
     return f"{valor:.3f}".rstrip("0").rstrip(".") or "0"
 
@@ -64,6 +97,7 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
         raise ValueError("No hay ninguna estancia que escribir.")
     for e in estancias:
         e.validar()
+    _vertices_de_vecinos(estancias)
 
     claves = [f"ROOM.R{i}" for i, _ in enumerate(estancias, start=1)]
     lineas = ["[VERSION]", f"STFF={VERSION_STF}", "Progname=MCP_Dialux", "Progvers=0.1", "",

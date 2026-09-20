@@ -127,6 +127,11 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
     estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
     renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
+- **Un solo fichero STF por ejercicio, aunque haya varias plantas** (Marcos, 20/9/2026: con un
+  fichero por planta DIALux no le dejaba importar las dos en el mismo proyecto). El STF **no
+  guarda el nivel de cada sala**, así que las plantas salen con su contorno real y Marcos las
+  coloca en su nivel. Las salas con el mismo nombre en dos plantas llevan la planta detrás
+  ("Ascensor (segunda planta)").
 - **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
   exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
   ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres

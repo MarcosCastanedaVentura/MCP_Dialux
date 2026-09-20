@@ -13,7 +13,9 @@ from dialux.stf import Estancia, escribir, rectangulo
 def _contenido(tmp_path, estancias, **extra) -> str:
     ruta = escribir(estancias, tmp_path / "salida", **extra)
     assert ruta.suffix == ".stf"
-    return ruta.read_text(encoding="latin-1")
+    # newline="" para ver los \r\n de verdad: read_text los convertiría a \n al leer.
+    with ruta.open(encoding="latin-1", newline="") as f:
+        return f.read()
 
 
 def test_una_sala_lleva_medidas_altura_y_plano_de_trabajo(tmp_path):

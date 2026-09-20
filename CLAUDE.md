@@ -127,9 +127,13 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
     estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
     renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
-- **Un fichero STF por planta** (decidido el 20/9/2026, tras probar el fichero único y
-  descartarlo). El STF no guarda el nivel de cada sala, así que cada planta se importa y se
-  coloca en DIALux.
+- **Un solo fichero STF por ejercicio, con las plantas una al lado de otra** (decidido el
+  20/9/2026 después de probar las tres opciones en evo 14). Dos hechos medidos:
+  - **Importar un segundo STF NO añade: sustituye** lo que hubiera en el proyecto. Con un fichero
+    por planta solo se puede tener una planta por proyecto.
+  - El STF **no guarda el nivel de cada sala**, así que dos plantas en su sitio real se solapan.
+  Por eso `construir.py` desplaza cada planta en X (`SEPARACION`, 5 m) y devuelve cuánto, en
+  `desplazada_x_m`. Marcos las coloca luego en DIALux.
 - **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
   exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
   ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres

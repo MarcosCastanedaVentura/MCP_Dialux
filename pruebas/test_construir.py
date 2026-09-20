@@ -24,13 +24,26 @@ def test_sin_la_altura_no_se_escribe_nada(tmp_path):
     assert not list(tmp_path.glob("*.stf"))
 
 
-def test_junio_da_un_stf_por_planta(tmp_path):
+def test_las_plantas_van_en_un_stf_y_separadas(tmp_path):
+    """Importar un segundo STF sustituye el proyecto en vez de añadirse (evo 14, 20/9/2026), y
+    dejadas en su sitio real las plantas se solaparían: por eso una al lado de otra."""
     salida = plano_a_stf(_plano("ExamenFinal-Junio-Dialux-26.dwg"), altura_m=3,
                          carpeta_destino=tmp_path)
     assert salida["escrito"] and salida["cotas"] == "6 de 6"
     assert [p["planta"] for p in salida["plantas"]] == ["SEGUNDA PLANTA", "TERCERA PLANTA"]
     assert len(salida["plantas"][0]["estancias"]) == 5
-    assert len(list(tmp_path.glob("*.stf"))) == 2
+    assert len(list(tmp_path.glob("*.stf"))) == 1
+
+    segunda, tercera = salida["plantas"]
+    assert segunda["desplazada_x_m"] == 0.0
+    # 23,365 de ancho de la planta + 5 de separación.
+    assert tercera["desplazada_x_m"] == 28.365
+
+    texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
+    assert "NrRooms=7" in texto
+    # El ascensor está en las dos plantas: sin distinguirlos habría dos salas con el mismo nombre.
+    assert "Name=Ascensor (segunda planta)" in texto and "Name=Ascensor (tercera planta)" in texto
+    assert any("plantas" in a for a in salida["avisos"])
 
     # Lo que el STF no lleva sale como tarea a mano, con los números ya puestos.
     archivos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Archivos")

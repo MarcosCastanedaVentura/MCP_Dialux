@@ -5,11 +5,12 @@ Junta lo que ya hay: `leer_plano` saca las salas con sus medidas y los datos del
 
 Dos decisiones:
 
-- **Un solo fichero, con las plantas una al lado de otra.** Dos hechos medidos el 20/9/2026 en
-  evo 14 obligan a esto: importar un segundo STF **no añade, sustituye** lo que hubiera en el
-  proyecto (así que un fichero por planta = una planta por proyecto), y el STF **no guarda a qué
-  nivel está cada sala**, así que si se dejan en su sitio real las plantas se solapan en el
-  suelo. Separándolas en X entran todas de una importación y Marcos las coloca en DIALux.
+- **Un solo fichero, con las plantas una al lado de otra.** Tres hechos medidos en evo 14, el 20
+  y el 21/9/2026: importar un segundo STF **no añade, sustituye** lo que hubiera en el proyecto;
+  el STF **no guarda a qué nivel está cada sala** (probados Z, Z0, Base, BaseHeight, Level,
+  Elevation, FloorHeight y Offset: las nueve salas del sondeo salieron en el suelo); y dejadas en
+  su sitio real las plantas se solapan. Separándolas en X entran todas de una importación, se
+  pueden seleccionar por separado y Marcos las sube a su planta dentro de DIALux.
 - **Lo que el STF no lleva, se dice con números.** La zona marginal y las columnas no se han
   conseguido escribir en el STF (no hay ejemplo real del que copiar el nombre de esos campos, ver
   `stf.py`), y Marcos prefiere ponerlas a mano en DIALux antes que cambiar de versión. Así que
@@ -122,6 +123,17 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                              "único fichero. Importar un segundo STF no añade nada: sustituye lo "
                              "que hubiera en el proyecto. El edificio y la planta los nombra "
                              "DIALux ('STF Building'): se renombran con doble clic.",
+            **({"para_dejarlo_en_un_solo_edificio": [
+                "El STF no sabe de plantas: al importar, todas las salas entran en la misma, una "
+                "al lado de otra. Las de cada planta están juntas, a la distancia que dice "
+                "'desplazada_x_m'.",
+                "1. Importa el fichero y renombra la planta con el nombre de la primera.",
+                "2. Crea en el mismo edificio una planta nueva por cada una de las demás.",
+                "3. Selecciona las salas de una planta (son las desplazadas a la derecha), "
+                "córtalas y pégalas en su planta nueva.",
+                "4. Colócalas en el mismo sitio que la primera, restando su 'desplazada_x_m' a la "
+                "coordenada X.",
+            ]} if len(escritos) > 1 else {}),
             "que_falta_por_poner": "Lo de 'a_mano' NO va dentro del STF: la zona marginal se pone "
                                    "en la superficie de cálculo de cada sala, y las columnas como "
                                    "objeto en la posición indicada (su centro, en metros desde la "

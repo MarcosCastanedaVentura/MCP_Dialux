@@ -139,6 +139,9 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - **Importar un segundo STF NO añade: sustituye** lo que hubiera en el proyecto. Con un fichero
     por planta solo se puede tener una planta por proyecto.
   - El STF **no guarda el nivel de cada sala**, así que dos plantas en su sitio real se solapan.
+    Comprobado el 21/9/2026 con un sondeo de ocho nombres candidatos (Z, Z0, Base, BaseHeight,
+    Level, Elevation, FloorHeight, Offset): las nueve salas salieron al nivel del suelo. **No
+  seguir buscando el campo a ciegas**: si hace falta de verdad, pedir la especificación a DIAL.
   Por eso `construir.py` desplaza cada planta en X (`SEPARACION`, 5 m) y devuelve cuánto, en
   `desplazada_x_m`. Marcos las coloca luego en DIALux.
 - **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el

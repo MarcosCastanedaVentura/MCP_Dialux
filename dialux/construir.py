@@ -23,6 +23,7 @@ Dos decisiones:
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from . import stf
@@ -31,9 +32,12 @@ from .cad.plano import leer_plano
 RAIZ = Path(__file__).resolve().parents[1]
 CARPETA = RAIZ / "salida"
 
-# Hueco entre plantas dentro del mismo fichero: suficiente para verlas separadas y para
-# seleccionar una entera sin pillar la de al lado.
+# Hueco mínimo entre plantas dentro del mismo fichero: suficiente para verlas separadas y para
+# seleccionar una entera sin pillar la de al lado. El desplazamiento final se redondea hacia
+# arriba a un múltiplo de PASO, porque Marcos tiene que restarlo a mano en DIALux para llevar
+# cada planta a su sitio: restar 30 es fácil y restar 28,365 es una fuente de erratas.
 SEPARACION = 5.0  # m
+PASO = 10.0  # m
 
 
 def _altura(sala: dict, altura_m: float | None, alturas: dict[str, float] | None) -> float | None:
@@ -77,9 +81,11 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 avisos.append(f"{sala['nombre']}: el plano no da altura del plano de trabajo; "
                               "se deja en el suelo (0 m).")
             nombre = sala["nombre"]
-            if nombre in repetidos:
-                # "Ascensor" está en las dos plantas: sin esto habría dos salas iguales en la lista.
-                nombre = f"{nombre} ({planta['nombre'].lower()})"
+            if len(plano["plantas"]) > 1:
+                # Todas llevan la planta detrás, no solo las repetidas como el ascensor: al
+                # duplicar la planta en DIALux hay que borrar las salas de las otras, y con el
+                # nombre delante se sabe cuáles sin ir mirándolas una a una.
+                nombre = f"{nombre} [{planta['nombre'].split()[0].lower()}]"
             estancias.append(stf.Estancia(
                 nombre=nombre,
                 contorno=[(x + desplazamiento, y) for x, y in sala["contorno_m"]],
@@ -91,7 +97,8 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
         plantas.append({"nombre": planta["nombre"], "estancias": estancias,
                         "desplazada_x_m": round(desplazamiento, 3),
                         "a_mano": _a_mano(planta)})
-        desplazamiento += planta["exterior_ancho_x_m"] + SEPARACION
+        siguiente = desplazamiento + planta["exterior_ancho_x_m"] + SEPARACION
+        desplazamiento = PASO * math.ceil(siguiente / PASO)
 
     if faltan:
         return {"fichero": plano["fichero"], "escrito": False, "faltan": sorted(set(faltan)),

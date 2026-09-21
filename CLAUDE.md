@@ -142,8 +142,16 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     Comprobado el 21/9/2026 con un sondeo de ocho nombres candidatos (Z, Z0, Base, BaseHeight,
     Level, Elevation, FloorHeight, Offset): las nueve salas salieron al nivel del suelo. **No
   seguir buscando el campo a ciegas**: si hace falta de verdad, pedir la especificación a DIAL.
-  Por eso `construir.py` desplaza cada planta en X (`SEPARACION`, 5 m) y devuelve cuánto, en
-  `desplazada_x_m`. Marcos las coloca luego en DIALux.
+  - **Las salas que se solapan se PIERDEN**, no se reparten en edificios como dice la
+    documentación de DIAL: probado el 21/9/2026 con las dos plantas de junio en su sitio real,
+    y en DIALux solo apareció una sala. Por eso las plantas van separadas.
+  Así que `construir.py` desplaza cada planta en X y redondea a múltiplo de 10 (`PASO`), porque
+  ese número Marcos lo resta a mano en DIALux; devuelve cuánto en `desplazada_x_m`. Y cada sala
+  lleva la planta en el nombre ("Archivos [segunda]") para saber cuáles borrar al duplicar.
+
+  **El método de Marcos para dejarlo en un edificio** (21/9/2026): importar, duplicar la planta,
+  borrar de cada copia las salas de las otras plantas y llevar cada planta a su origen restando
+  su desplazamiento.
 - **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
   exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
   ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres

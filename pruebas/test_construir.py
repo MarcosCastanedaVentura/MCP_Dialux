@@ -36,13 +36,14 @@ def test_las_plantas_van_en_un_stf_y_separadas(tmp_path):
 
     segunda, tercera = salida["plantas"]
     assert segunda["desplazada_x_m"] == 0.0
-    # 23,365 de ancho de la planta + 5 de separación.
-    assert tercera["desplazada_x_m"] == 28.365
+    # 23,365 de ancho + 5 de separación = 28,365, redondeado a 30 para restarlo a mano sin errar.
+    assert tercera["desplazada_x_m"] == 30.0
 
     texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
     assert "NrRooms=7" in texto
-    # El ascensor está en las dos plantas: sin distinguirlos habría dos salas con el mismo nombre.
-    assert "Name=Ascensor (segunda planta)" in texto and "Name=Ascensor (tercera planta)" in texto
+    # Cada sala dice de qué planta es: al duplicar la planta en DIALux hay que borrar las otras.
+    assert "Name=Archivos [segunda]" in texto
+    assert "Name=Ascensor [segunda]" in texto and "Name=Ascensor [tercera]" in texto
     assert any("plantas" in a for a in salida["avisos"])
 
     # Lo que el STF no lleva sale como tarea a mano, con los números ya puestos.
@@ -65,5 +66,6 @@ def test_el_parcial_usa_la_altura_del_enunciado(tmp_path):
 def test_altura_distinta_para_una_sala(tmp_path):
     salida = plano_a_stf(_plano("ExamenFinal-Junio-Dialux-26.dwg"), altura_m=3,
                          alturas={"Archivos": 4.5}, carpeta_destino=tmp_path)
-    alturas = {e["nombre"]: e["altura_m"] for e in salida["plantas"][0]["estancias"]}
+    # Los nombres llevan la planta detrás ("Archivos [segunda]"), así que se busca por el principio.
+    alturas = {e["nombre"].split(" [")[0]: e["altura_m"] for e in salida["plantas"][0]["estancias"]}
     assert alturas["Archivos"] == 4.5 and alturas["Baños"] == 3

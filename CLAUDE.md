@@ -30,7 +30,7 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
    - Rutas siempre con `pathlib`, nunca con `/` escrito a mano ni rutas absolutas del Mac.
    - Nada que solo exista en macOS (ni `brew`, ni comandos de shell de Unix desde Python).
    - El entorno **no se copia**: se recrea en cada máquina desde `requirements.txt`. El de Windows
-     va en el disco de Windows (`C:\Users\marco\.venvs\mcp_dialux`), nunca dentro de la carpeta
+     va en el disco de Windows (`%USERPROFILE%\.venvs\mcp_dialux`), nunca dentro de la carpeta
      compartida: sobre una unidad de red la instalación es lenta y falla, y con el mismo nombre
      que el del Mac cada sistema rompería el del otro.
    - Lo que solo tiene sentido en Windows (automatizar la ventana de DIALux) va aislado en su
@@ -169,11 +169,10 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     incluido). Las 3 pruebas pasan en la VM (16/9/2026).
   - ODA File Converter solo sale para Windows x64: en ARM corre emulado, y funciona.
   - Las carpetas compartidas de VMware no aparecen en esta VM aunque VMware Tools está instalado.
-    **El proyecto se comparte por SMB desde el Mac** (16/9/2026): en Windows es la unidad `Z:`
-    = `\\192.168.110.1\MCP_Dialux`. Esa IP es el Mac en la red NAT de VMware (vmnet8), así que
-    no cambia al cambiar de wifi. Se conectó con
-    `net use Z: \\192.168.110.1\MCP_Dialux /user:marcos /persistent:yes`.
-  - El usuario de Windows es `marco` (sin s), el del Mac `marcos`.
+    **El proyecto se comparte por SMB desde el Mac** (16/9/2026) y en Windows es la unidad `Z:`.
+    La dirección es la del Mac en la red NAT de VMware (vmnet8), que no cambia al cambiar de
+    wifi; se monta con `net use Z: \\<ip-del-mac>\MCP_Dialux /user:<usuario> /persistent:yes`.
+  - El usuario de Windows y el del Mac no se llaman igual: ojo al escribir rutas.
 
 ---
 

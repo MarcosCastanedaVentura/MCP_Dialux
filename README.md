@@ -210,3 +210,7 @@ repositorio: son material de la asignatura.
 Las pruebas se apoyan en los exámenes reales y se saltan solas si no están. Cada una documenta el
 fallo que la hizo necesaria: la diagonal del pasillo, los textos de dos salas que se asignaron al
 revés, las filas de la norma con los miles escritos sin espacio.
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).

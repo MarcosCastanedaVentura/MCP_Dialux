@@ -36,7 +36,14 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
    - Lo que solo tiene sentido en Windows (automatizar la ventana de DIALux) va aislado en su
      propio módulo y se importa solo en Windows, para que el resto arranque en el Mac.
 
-3. **No inventar datos de norma ni de luminarias.** Los valores exigidos por la UNE-EN 12464-1
+3. **Un ejercicio es UN edificio.** Lo que en el plano son plantas distintas (segunda, tercera…)
+   son plantas del mismo edificio, nunca edificios separados. Regla de Marcos del 21/9/2026,
+   después de recibir el examen de junio como dos edificios sueltos. Solo se hacen varios
+   edificios si él lo pide. El STF no sabe de niveles (ver sección 3), así que mientras no se
+   encuentre la forma de decirlo en el fichero, hay que explicarle cómo dejarlo en un edificio
+   dentro de DIALux.
+
+4. **No inventar datos de norma ni de luminarias.** Los valores exigidos por la UNE-EN 12464-1
    (Em, UGRL, U₀, Ra por tipo de tarea) salen de la copia de la norma de Marcos, leídos de su PDF, y
    se enseña de qué fila salen para que se pueda revisar. Los datos fotométricos salen del fichero de la luminaria (LDT/ULD/
    IES), nunca de memoria. Si falta un dato, se pide; no se supone.

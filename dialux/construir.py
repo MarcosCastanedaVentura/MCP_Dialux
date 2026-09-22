@@ -138,7 +138,8 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
 
         plantas.append({"nombre": planta["nombre"], "estancias": estancias,
                         "desplazada_x_m": round(desplazamiento, 3),
-                        "a_mano": _a_mano(planta)})
+                        "a_mano": _a_mano(planta, alto_puerta_m, alfeizar_ventana_m,
+                                          alto_ventana_m)})
         siguiente = desplazamiento + planta["exterior_ancho_x_m"] + SEPARACION
         desplazamiento = PASO * math.ceil(siguiente / PASO)
 
@@ -153,10 +154,11 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                    if h.tipo == "ventana")
     if puertas or ventanas:
         avisos.append(
-            f"Se han escrito {puertas} puerta(s) y {ventanas} ventana(s) sacadas de los huecos de "
-            f"los muros del plano. Sus alturas no están en el plano: puertas de {alto_puerta_m} m "
-            f"y ventanas de {alto_ventana_m} m a {alfeizar_ventana_m} m del suelo. Si el enunciado "
-            "dice otra cosa, se puede cambiar al generar.")
+            f"Del plano salen {puertas} puerta(s) y {ventanas} ventana(s), y van escritas en el "
+            "fichero, pero **DIALux evo no las importa** (comprobado el 22/9/2026: el formato las "
+            "admite y evo las ignora). Están en 'a_mano' con su posición y su tamaño para ponerlas "
+            f"en DIALux. Las alturas no las da el plano: puertas de {alto_puerta_m} m y ventanas "
+            f"de {alto_ventana_m} m a {alfeizar_ventana_m} m del suelo.")
 
     if len(plantas) > 1:
         avisos.append(
@@ -211,11 +213,22 @@ def _nombres_repetidos(plantas: list[dict]) -> set[str]:
     return repetidos
 
 
-def _a_mano(planta: dict) -> list[dict]:
-    """Lo que hay que teclear en DIALux después de importar, sala por sala y con los números."""
+def _a_mano(planta: dict, alto_puerta: float, alfeizar: float, alto_ventana: float) -> list[dict]:
+    """Lo que hay que teclear en DIALux después de importar, sala por sala y con los números.
+
+    Aquí va todo lo que el importador de evo no coge: la zona marginal, las columnas y los huecos
+    de puertas y ventanas.
+    """
     pendiente = []
     for sala in planta["salas"]:
         tareas = {}
+        if sala.get("aberturas"):
+            tareas["huecos"] = [
+                {"tipo": h["tipo"], "centro_m": h["centro_m"], "ancho_m": h["ancho_m"],
+                 "alto_m": alto_ventana if h["tipo"] == "ventana" else alto_puerta,
+                 "alfeizar_m": alfeizar if h["tipo"] == "ventana" else 0.0,
+                 "en_fachada": h["en_fachada"]}
+                for h in sala["aberturas"]]
         if sala.get("zona_marginal_m"):
             tareas["zona_marginal_m"] = sala["zona_marginal_m"]
         if sala.get("obstaculos"):

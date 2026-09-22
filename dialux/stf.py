@@ -42,9 +42,15 @@ class Luminaria:
 class Abertura:
     """Una ventana o una puerta en una pared de la sala.
 
-    En STF son "muebles" con nombre reservado (`win`, `door`, `skylight`), y son lo único de los
-    muebles que DIALux lee al importar. Su origen es el punto medio de su anchura, a ras del
-    suelo del hueco, y DIALux los pega a la pared más cercana: la rotación la ignora.
+    En STF son "muebles" con nombre reservado (`win`, `door`, `skylight`). Su origen es el punto
+    medio de su anchura, a ras del suelo del hueco, y la rotación se ignora porque se pegan a la
+    pared más cercana.
+
+    **DIALux evo 14 NO las importa**, medido el 22/9/2026 con un sondeo de seis salas (coordenadas
+    del plano y de la sala, con alféizar y a ras de suelo, ventana y puerta): ninguna aparece. La
+    especificación es de DIALux 4 y el importador de evo solo levanta las salas. Se siguen
+    escribiendo porque son correctas según la especificación y las lee el DIALux clásico; para evo,
+    los huecos salen en la lista de trabajo a mano de `construir.py`.
     """
     tipo: str            # "ventana" o "puerta"
     centro_m: tuple[float, float]

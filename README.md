@@ -132,7 +132,8 @@ Lo que se averiguó probando, antes de tener el documento:
 | Importar un segundo STF en el mismo proyecto | **Sustituye** el proyecto, no añade. Todo tiene que ir en un fichero |
 | Dos salas en el mismo sitio (dos plantas superpuestas) | Se pierden: solo sobrevive una |
 | Nivel o planta de cada sala | No se ha encontrado. Probados 16 nombres de campo, los puntos del contorno con tercera coordenada y una sección de planta aparte: todas las salas salen al nivel del suelo. La especificación lo confirmó después: una sala es un polígono 2D, el formato no tiene plantas |
-| Columnas y zona marginal | No se han conseguido escribir; se devuelven con sus medidas para ponerlas a mano |
+| Columnas y zona marginal | El formato no las tiene; se devuelven con sus medidas para ponerlas a mano |
+| Ventanas y puertas | El formato las admite y se escriben, pero el importador de DIALux evo las ignora: solo levanta las salas |
 
 Como el formato no sabe de plantas, las de un mismo edificio se escriben separadas en el plano,
 con un desplazamiento redondo que la herramienta indica, y cada sala lleva su planta en el nombre
@@ -155,7 +156,8 @@ con un desplazamiento redondo que la herramienta indica, y cada sala lleva su pl
 
 - Las **luminarias** todavía no se colocan: el edificio llega a DIALux vacío. El formato STF las
   admite, incluso en retícula, y es el siguiente paso.
-- **Columnas y zona marginal** hay que ponerlas a mano, con los datos que da la herramienta.
+- **Columnas, zona marginal, puertas y ventanas** hay que ponerlas a mano en DIALux evo, con los
+  datos que da la herramienta: su importador de STF solo levanta las salas.
 - Las plantas de un edificio **se colocan a mano** dentro de DIALux: el formato no sabe de
   niveles, así que la herramienta las separa en el plano y explica cuánto hay que desplazar cada
   una. Es la limitación más gorda que queda, y depende de conseguir la especificación del formato.

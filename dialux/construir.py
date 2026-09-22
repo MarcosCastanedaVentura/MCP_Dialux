@@ -16,6 +16,10 @@ Dos decisiones:
   `stf.py`), y Marcos prefiere ponerlas a mano en DIALux antes que cambiar de versión. Así que
   salen en `a_mano`, con el valor y la posición ya calculados: la herramienta no puede meterlas,
   pero sí evitar que haya que volver al plano a buscarlas.
+- **Los nombres son los del plano, salvo que se pidan genéricos.** Con `nombres_genericos` las
+  salas salen como "Local 1", "Local 2"…, que es como las nombra DIALux al crearlas a mano, y el
+  proyecto lleva el nombre que se le pase. El edificio y la planta no se pueden nombrar desde el
+  fichero: los pone DIALux y se cambian con doble clic.
 - **Lo que el plano no dice, se pide.** Si falta la altura de una sala no se escribe el fichero:
   se devuelve qué falta y para qué salas. Un edificio con una altura inventada parece correcto y
   es justo lo que no puede pasar (ver el invariante 3).
@@ -39,6 +43,16 @@ CARPETA = RAIZ / "salida"
 SEPARACION = 5.0  # m
 PASO = 10.0  # m
 
+# Alturas de puertas y ventanas: el plano no las dice nunca (el examen de enero llega a decir
+# "incluir las ventanas a la altura que se quiera"), así que son valores de obra corrientes y se
+# avisa de que se han usado. Se pueden cambiar al llamar.
+ALTO_PUERTA = 2.1        # m
+ALFEIZAR_VENTANA = 1.0   # m del suelo al borde de abajo
+ALTO_VENTANA = 1.5       # m
+
+# Con `nombres_genericos`, las salas se numeran como las nombra DIALux evo al crearlas a mano.
+NOMBRE_GENERICO = "Local {n}"
+
 
 def _altura(sala: dict, altura_m: float | None, alturas: dict[str, float] | None) -> float | None:
     if alturas:
@@ -48,9 +62,28 @@ def _altura(sala: dict, altura_m: float | None, alturas: dict[str, float] | None
     return sala.get("altura_sala_m") or altura_m
 
 
+def _aberturas(sala: dict, alto_puerta: float, alfeizar: float, alto_ventana: float,
+               altura_sala: float) -> list[stf.Abertura]:
+    salida = []
+    for hueco in sala.get("aberturas", []):
+        if hueco["tipo"] == "ventana":
+            alto = min(alto_ventana, altura_sala - alfeizar - 0.1)
+            salida.append(stf.Abertura("ventana", tuple(hueco["centro_m"]), hueco["ancho_m"],
+                                       round(alto, 3), alfeizar))
+        else:
+            salida.append(stf.Abertura("puerta", tuple(hueco["centro_m"]), hueco["ancho_m"],
+                                       min(alto_puerta, altura_sala - 0.1)))
+    return salida
+
+
 def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 alturas: dict[str, float] | None = None,
-                carpeta_destino: str | Path | None = None) -> dict:
+                carpeta_destino: str | Path | None = None,
+                nombres_genericos: bool = False,
+                nombre_proyecto: str | None = None,
+                alto_puerta_m: float = ALTO_PUERTA,
+                alfeizar_ventana_m: float = ALFEIZAR_VENTANA,
+                alto_ventana_m: float = ALTO_VENTANA) -> dict:
     """Construye el edificio del plano y escribe UN fichero STF con todas sus plantas."""
     plano = leer_plano(ruta_plano)
     carpeta = Path(carpeta_destino) if carpeta_destino else CARPETA
@@ -68,6 +101,7 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
     repetidos = _nombres_repetidos(plano["plantas"])
     plantas = []
     desplazamiento = 0.0
+    numero = 1
     for planta in plano["plantas"]:
         estancias = []
         for sala in planta["salas"]:
@@ -81,17 +115,25 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 avisos.append(f"{sala['nombre']}: el plano no da altura del plano de trabajo; "
                               "se deja en el suelo (0 m).")
             nombre = sala["nombre"]
-            if len(plano["plantas"]) > 1:
+            if nombres_genericos:
+                nombre = NOMBRE_GENERICO.format(n=numero)
+                numero += 1
+            elif len(plano["plantas"]) > 1:
                 # Todas llevan la planta detrás, no solo las repetidas como el ascensor: al
                 # duplicar la planta en DIALux hay que borrar las salas de las otras, y con el
                 # nombre delante se sabe cuáles sin ir mirándolas una a una.
                 nombre = f"{nombre} [{planta['nombre'].split()[0].lower()}]"
+            huecos = _aberturas(sala, alto_puerta_m, alfeizar_ventana_m, alto_ventana_m, altura)
+            for hueco in huecos:
+                x, y = hueco.centro_m
+                hueco.centro_m = (x + desplazamiento, y)
             estancias.append(stf.Estancia(
                 nombre=nombre,
                 contorno=[(x + desplazamiento, y) for x, y in sala["contorno_m"]],
                 altura_m=altura,
                 plano_trabajo_m=plano_trabajo,
                 factor_mantenimiento=sala.get("factor_mantenimiento"),
+                aberturas=huecos,
             ))
 
         plantas.append({"nombre": planta["nombre"], "estancias": estancias,
@@ -105,6 +147,17 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 "avisos": avisos,
                 "como_seguir": "Pásame esos datos (por ejemplo altura_m=3) y lo vuelvo a generar."}
 
+    puertas = sum(1 for p in plantas for e in p["estancias"] for h in e.aberturas
+                  if h.tipo == "puerta")
+    ventanas = sum(1 for p in plantas for e in p["estancias"] for h in e.aberturas
+                   if h.tipo == "ventana")
+    if puertas or ventanas:
+        avisos.append(
+            f"Se han escrito {puertas} puerta(s) y {ventanas} ventana(s) sacadas de los huecos de "
+            f"los muros del plano. Sus alturas no están en el plano: puertas de {alto_puerta_m} m "
+            f"y ventanas de {alto_ventana_m} m a {alfeizar_ventana_m} m del suelo. Si el enunciado "
+            "dice otra cosa, se puede cambiar al generar.")
+
     if len(plantas) > 1:
         avisos.append(
             f"El edificio tiene {len(plantas)} plantas y van todas en el mismo fichero, una al "
@@ -113,7 +166,8 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
             "colócalas en DIALux como quieras.")
 
     todas = [e for planta in plantas for e in planta["estancias"]]
-    ruta = stf.escribir(todas, carpeta / base, proyecto=Path(ruta_plano).stem)
+    ruta = stf.escribir(todas, carpeta / base,
+                        proyecto=nombre_proyecto or Path(ruta_plano).stem)
     escritos = [{
         "planta": planta["nombre"],
         "desplazada_x_m": planta["desplazada_x_m"],

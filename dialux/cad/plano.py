@@ -10,13 +10,22 @@ from shapely.affinity import scale as escalar
 
 from . import enunciado as en
 from .convertir import a_dxf
-from .geometria import caras, salas_y_plantas, tramos
+from .geometria import aberturas, caras, huecos, salas_y_plantas, tramos
 
 # $INSUNITS de AutoCAD -> metros por unidad de dibujo.
 UNIDADES = {4: 0.001, 5: 0.01, 6: 1.0}
 
 # Las cotas del plano se escriben con dos decimales: 9,44 cubre de 9,435 a 9,445.
 TOLERANCIA_COTA = 0.006  # m
+
+# Una pared que queda a menos de esto del borde exterior de la planta es fachada. Es medio grueso
+# de muro: los muros más gruesos de los exámenes son de 0,59 m.
+MARGEN_FACHADA = 0.35  # m
+
+# En fachada, un hueco más estrecho que esto es la puerta de entrada y no una ventana. Medido en
+# los exámenes y en el plano de ejemplo: las puertas van de 0,9 a 1,5 m y las ventanas de 1,98 a
+# 2,08 m. Hacia dentro del edificio no se usa: ahí todo hueco es un paso entre salas.
+ANCHO_MAX_PUERTA = 1.6  # m
 
 DATOS_PARA_CALCULAR = {
     "altura_sala_m": "altura de la sala",
@@ -61,7 +70,9 @@ def leer_plano(ruta: str | Path) -> dict:
         avisos.append(f"El plano no declara unidades conocidas ($INSUNITS={codigo_unidades}): "
                       "se suponen metros. Comprueba que las medidas cuadran con las cotas.")
 
-    poligonos = [escalar(p, factor, factor, origin=(0, 0)) for p in caras(tramos(msp))]
+    dibujo = tramos(msp)
+    poligonos = [escalar(p, factor, factor, origin=(0, 0)) for p in caras(dibujo)]
+    cierres = [escalar(c, factor, factor, origin=(0, 0)) for c in huecos(dibujo)]
     salas, plantas = salas_y_plantas(poligonos)
     textos = _textos(msp, factor)
 
@@ -109,6 +120,7 @@ def leer_plano(ruta: str | Path) -> dict:
                 datos[k] = comun[k]
 
             w, h = _medidas(sala)
+            huecos_sala = _aberturas(sala, cierres, contorno, x0, y0, textos)
             entrada = {
                 "nombre": nombre[i],
                 **{k: v for k, v in datos.items() if k != "notas"},
@@ -123,6 +135,7 @@ def leer_plano(ruta: str | Path) -> dict:
                      "centro_m": (_r(Polygon(o).centroid.x - x0), _r(Polygon(o).centroid.y - y0))}
                     for o in sala.interiors
                 ],
+                **({"aberturas": huecos_sala} if huecos_sala else {}),
             }
             if heredados:
                 entrada["datos_del_enunciado_general"] = heredados
@@ -148,6 +161,38 @@ def leer_plano(ruta: str | Path) -> dict:
         "cotas": _comprobar_cotas(msp, factor, resultado_plantas),
         "avisos": avisos,
     }
+
+
+def _aberturas(sala, cierres, contorno_planta, x0: float, y0: float,
+               textos: list[en.Texto]) -> list[dict]:
+    """Puertas y ventanas de una sala, sacadas de los huecos que quedaron en sus muros.
+
+    Qué es cada una no lo dice el plano, así que se deduce: un hueco en una pared que da al
+    exterior del edificio es una ventana, salvo que sea estrecho, que entonces es la puerta de
+    entrada; hacia dentro, todo hueco es un paso entre salas. Si hay un texto al lado que dice
+    "ventana" o "puerta", manda el texto.
+    """
+    borde = contorno_planta.exterior
+    salida = []
+    for hueco in aberturas(sala, cierres):
+        x, y = hueco["centro"]
+        punto = Point(x, y)
+        etiqueta = next((en.normalizar(t.contenido) for t in textos
+                         if punto.distance(Point(t.x, t.y)) < 2.0
+                         and ("ventana" in en.normalizar(t.contenido)
+                              or "puerta" in en.normalizar(t.contenido))), "")
+        if "ventana" in etiqueta:
+            tipo = "ventana"
+        elif "puerta" in etiqueta:
+            tipo = "puerta"
+        elif borde.distance(punto) <= MARGEN_FACHADA:
+            tipo = "puerta" if hueco["ancho_m"] <= ANCHO_MAX_PUERTA else "ventana"
+        else:
+            tipo = "puerta"
+        salida.append({"tipo": tipo, "pared": hueco["pared"], "ancho_m": hueco["ancho_m"],
+                       "centro_m": (_r(x - x0), _r(y - y0)),
+                       "en_fachada": borde.distance(punto) <= MARGEN_FACHADA})
+    return salida
 
 
 def _comprobar_cotas(msp, factor: float, plantas: list[dict]) -> dict:

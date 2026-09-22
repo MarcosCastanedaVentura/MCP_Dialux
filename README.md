@@ -53,7 +53,7 @@ equivocado.
 | Herramienta | Entrada | Salida |
 |---|---|---|
 | `leer_plano` | Un `.dwg` o `.dxf` | Plantas, salas, contornos, superficies, columnas y los datos del enunciado escritos en el plano, comprobados contra las cotas del dibujo |
-| `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, más la lista de lo que hay que rematar a mano |
+| `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, sus puertas y ventanas, más la lista de lo que hay que rematar a mano |
 | `requisitos_norma` | Una referencia de tabla, `"34.7"` | Ēm, U₀, Ra, UGR e iluminancias en paredes y techo, citando tabla, fila y página del PDF de la norma |
 | `buscar_en_norma` | Un texto, `"enfermería"` | Las filas de la norma que encajan, para encontrar la referencia cuando el enunciado no la da |
 
@@ -68,6 +68,8 @@ escribir un dato a mano:
   plano de trabajo, zona marginal, factor de mantenimiento y el tipo de actividad según la norma
   (`34.2 Oficina`, `10.7 Sala para atención médica`…).
 - **Las columnas** que hay dentro de dos salas, con su tamaño y su posición.
+- **Las puertas y las ventanas**, deducidas de los huecos que quedan en los muros: en fachada un
+  hueco ancho es una ventana y uno estrecho la entrada; hacia dentro, un paso entre salas.
 - **La comprobación**: las 6 cotas del dibujo coinciden con las medidas reconstruidas.
 
 ## Cómo funciona
@@ -152,7 +154,7 @@ con un desplazamiento redondo que la herramienta indica, y cada sala lleva su pl
 ## Limitaciones
 
 - Las **luminarias** todavía no se colocan: el edificio llega a DIALux vacío. El formato STF las
-  admite y es el siguiente paso.
+  admite, incluso en retícula, y es el siguiente paso.
 - **Columnas y zona marginal** hay que ponerlas a mano, con los datos que da la herramienta.
 - Las plantas de un edificio **se colocan a mano** dentro de DIALux: el formato no sabe de
   niveles, así que la herramienta las separa en el plano y explica cuánto hay que desplazar cada

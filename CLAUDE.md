@@ -192,6 +192,15 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
 
 ---
 
+### Nombres de las salas
+
+Por defecto salen del plano (el uso que pone la profesora). Con `nombres_genericos` salen como
+"Local 1", "Local 2"…, que es como DIALux evo nombra las salas creadas a mano, y el proyecto lleva
+el nombre que se le pase. Lo pidió Marcos el 22/9/2026 para entregar los trabajos con el aspecto
+de un proyecto normal de DIALux. El edificio y la planta no se pueden nombrar desde el fichero.
+
+---
+
 ## 4. ESTRUCTURA
 
 ```

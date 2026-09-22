@@ -96,6 +96,26 @@ def huecos(lista: list[LineString], hueco_max: float = HUECO_MAX) -> list[LineSt
     return cierres
 
 
+def aberturas(sala: Polygon, cierres: list[LineString]) -> list[dict]:
+    """Los huecos de puerta y ventana de una sala: los tramos cerrados que caen sobre su pared.
+
+    Cada uno se devuelve con el centro del hueco y su anchura. La pared es la que va del punto
+    <n> al <n>+1 del contorno, que es la numeración que usa el propio STF para las reflectancias.
+    """
+    encontradas = []
+    contorno = list(sala.exterior.coords)[:-1]
+    for i, (a, b) in enumerate(zip(contorno, contorno[1:] + contorno[:1]), start=1):
+        pared = LineString([a, b])
+        for cierre in cierres:
+            comun = pared.intersection(cierre.buffer(TOLERANCIA, cap_style="flat"))
+            if comun.is_empty or comun.geom_type != "LineString" or comun.length < 0.2:
+                continue
+            centro = comun.interpolate(0.5, normalized=True)
+            encontradas.append({"pared": i, "centro": (centro.x, centro.y),
+                                "ancho_m": round(comun.length, 3)})
+    return encontradas
+
+
 def caras(lista: list[LineString]) -> list[Polygon]:
     red = unary_union(lista + huecos(lista))
     return [p for p in polygonize(list(getattr(red, "geoms", [red]))).geoms if p.area > 1e-6]

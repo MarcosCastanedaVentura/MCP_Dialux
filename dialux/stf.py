@@ -27,12 +27,34 @@ from pathlib import Path
 
 VERSION_STF = "1.0.5"
 
+# Material de ventanas y puertas: reflexión y color RGB, en el formato de la especificación.
+COLOR_HUECO = "52 215 164 63"
+
 
 @dataclass
 class Luminaria:
     nombre: str
     posicion: tuple[float, float, float]
     rotacion: tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+
+@dataclass
+class Abertura:
+    """Una ventana o una puerta en una pared de la sala.
+
+    En STF son "muebles" con nombre reservado (`win`, `door`, `skylight`), y son lo único de los
+    muebles que DIALux lee al importar. Su origen es el punto medio de su anchura, a ras del
+    suelo del hueco, y DIALux los pega a la pared más cercana: la rotación la ignora.
+    """
+    tipo: str            # "ventana" o "puerta"
+    centro_m: tuple[float, float]
+    ancho_m: float
+    alto_m: float
+    alfeizar_m: float = 0.0
+
+    @property
+    def palabra(self) -> str:
+        return "win" if self.tipo == "ventana" else "door"
 
 
 @dataclass
@@ -46,6 +68,7 @@ class Estancia:
     reflectancia_suelo: float | None = None
     factor_mantenimiento: float | None = None
     luminarias: list[Luminaria] = field(default_factory=list)
+    aberturas: list[Abertura] = field(default_factory=list)
 
     def validar(self) -> None:
         if len(self.contorno) < 3:
@@ -105,6 +128,7 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
     _vertices_de_vecinos(estancias)
 
     claves = [f"ROOM.R{i}" for i, _ in enumerate(estancias, start=1)]
+    materiales: list[list[str]] = []
     lineas = ["[VERSION]", f"STFF={VERSION_STF}", "Progname=MCP_Dialux", "Progvers=0.1", "",
               "[Project]", f"Name={proyecto}", f"Date={date.today():%Y-%m-%d}",
               f"Operator={autor}", f"NrRooms={len(estancias)}"]
@@ -132,7 +156,21 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
             lineas += [f"Lum{i}={lum.nombre}",
                        f"Lum{i}.Pos={' '.join(_num(v) for v in lum.posicion)}",
                        f"Lum{i}.Rot={' '.join(_num(v) for v in lum.rotacion)}"]
-        lineas += ["NrStruct=0", "NrFurns=0"]
+        lineas.append("NrStruct=0")
+        lineas.append(f"NrFurns={len(e.aberturas)}")
+        for i, hueco in enumerate(e.aberturas, start=1):
+            x, y = hueco.centro_m
+            lineas += [f"Furn{i}={hueco.palabra}",
+                       f"Furn{i}.Ref={clave}.F{i}",
+                       f"Furn{i}.Pos={_num(x)} {_num(y)} {_num(hueco.alfeizar_m)}",
+                       f"Furn{i}.Rot=0 0 0",
+                       # El tamaño en z de una ventana o una puerta se ignora, pero la
+                       # especificación pide escribirlo igualmente.
+                       f"Furn{i}.Size={_num(hueco.ancho_m)} {_num(hueco.alto_m)} 0"]
+            materiales.append([f"[{clave}.F{i}]", f"Poly.Color={COLOR_HUECO}"])
+
+    for material in materiales:
+        lineas += [""] + material
 
     ruta = Path(destino).expanduser().with_suffix(".stf")
     ruta.parent.mkdir(parents=True, exist_ok=True)

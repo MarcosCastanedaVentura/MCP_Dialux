@@ -40,7 +40,9 @@ def leer_plano(ruta: str) -> dict:
 
 @mcp.tool()
 def construir_edificio(ruta_plano: str, altura_m: float | None = None,
-                       alturas: dict[str, float] | None = None) -> dict:
+                       alturas: dict[str, float] | None = None,
+                       nombres_genericos: bool = False,
+                       nombre_proyecto: str | None = None) -> dict:
     """Construye el edificio del plano y escribe un fichero STF por planta para DIALux evo.
 
     Cada sala entra con su contorno real, su nombre, su altura y su plano de trabajo. El alumno
@@ -50,6 +52,9 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
     altura_m: altura de las salas cuando el plano no la dice. Pregúntasela al alumno; no la
       supongas. Si falta, la herramienta no escribe nada y devuelve 'faltan'.
     alturas: altura distinta para salas concretas, por nombre, p. ej. {"Oficina": 3.5}.
+    nombres_genericos: si es True, las salas se llaman "Local 1", "Local 2"…, como las nombra
+      DIALux al crearlas a mano, en vez de con el uso que pone el plano.
+    nombre_proyecto: el nombre del proyecto dentro del fichero; por defecto, el del plano.
 
     Cuéntale SIEMPRE lo que venga en 'a_mano': son la zona marginal y las columnas, que el STF no
     lleva y hay que poner en DIALux después de importar. Van con el valor y la posición ya
@@ -58,7 +63,8 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
     Lee también 'avisos', y comprueba 'cotas': si las cotas del plano no cuadran, avísale antes
     de que use el edificio.
     """
-    return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas)
+    return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas,
+                        nombres_genericos=nombres_genericos, nombre_proyecto=nombre_proyecto)
 
 
 @mcp.tool()

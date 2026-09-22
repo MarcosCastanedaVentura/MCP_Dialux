@@ -7,7 +7,7 @@ módulo es una prueba hecha en la máquina virtual.
 
 import pytest
 
-from dialux.stf import Estancia, escribir, rectangulo
+from dialux.stf import Abertura, Estancia, escribir, rectangulo
 
 
 def _contenido(tmp_path, estancias, **extra) -> str:
@@ -72,3 +72,23 @@ def test_no_se_escribe_un_edificio_imposible(tmp_path):
         escribir([Estancia("Sala", [(0, 0), (1, 1)], altura_m=3)], tmp_path / "salida")
     with pytest.raises(ValueError, match="ninguna estancia"):
         escribir([], tmp_path / "salida")
+
+
+def test_ventanas_y_puertas(tmp_path):
+    """Son lo único de los "muebles" del STF que DIALux lee al importar."""
+    sala = Estancia("Sala", rectangulo(5, 4), altura_m=3, aberturas=[
+        Abertura("ventana", (0.0, 2.0), ancho_m=2.0, alto_m=1.5, alfeizar_m=1.0),
+        Abertura("puerta", (2.5, 0.0), ancho_m=0.9, alto_m=2.1),
+    ])
+    texto = _contenido(tmp_path, [sala])
+    assert "NrFurns=2" in texto
+    assert "Furn1=win" in texto and "Furn2=door" in texto
+    # La posición es el punto medio del hueco, y la z es el alféizar.
+    assert "Furn1.Pos=0 2 1" in texto and "Furn1.Size=2 1.5 0" in texto
+    assert "Furn2.Pos=2.5 0 0" in texto and "Furn2.Size=0.9 2.1 0" in texto
+    # Cada hueco necesita su sección de material, a la que apunta con Ref.
+    assert "Furn1.Ref=ROOM.R1.F1" in texto and "[ROOM.R1.F1]" in texto
+
+
+def test_sin_aberturas_no_hay_muebles(tmp_path):
+    assert "NrFurns=0" in _contenido(tmp_path, [Estancia("Sala", rectangulo(5, 4), altura_m=3)])

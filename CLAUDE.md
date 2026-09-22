@@ -164,10 +164,22 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   prefiere poner esas dos cosas a mano, que son rápidas.** Por eso `construir_edificio` las
   devuelve en `a_mano` con el valor y la posición calculados. Si algún día aparece el nombre
   bueno del campo, se añade a `stf.py` y se quita de ahí.
-- **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
-  `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
-  y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:
-  ficheros de prueba en `material/pruebas_stf/`.
+- **La especificación oficial de STF (1.0.5) la tiene Marcos desde el 22/9/2026**, enviada por
+  el soporte de DIAL a petición suya. Está en `material/STF file format.pdf`, **fuera de git: el
+  documento va marcado como confidencial**. No subirlo ni copiar sus tablas al repositorio
+  público; usarlo para escribir el código es para lo que lo mandan.
+  Lo que aclaró, y que antes estaba deducido de los exportadores de código abierto:
+  - El factor de mantenimiento es **`MF`**. `MaintenanceFactor`, que estaba escrito antes, no
+    existe: DIALux lo ignoraba y las salas entraban con el 0,8 por defecto.
+  - Las reflectancias de pared son **`R_Wall<n>`**, una por tramo (del punto n al n+1), además de
+    `R_Ceiling` y `R_Floor`.
+  - **No hay nivel de planta ni zona marginal**: una sala es un polígono 2D con suelo y techo
+    planos. Deja de ser una sospecha y pasa a ser un límite del formato.
+  - **Ventanas y puertas sí se pueden escribir** (`Furn<n>=win` / `door` / `skylight`, con
+    posición y tamaño); los muebles corrientes se escriben pero DIALux **no los lee** al
+    importar, así que las columnas se quedan a mano.
+  - Las luminarias admiten **retícula** (`Type=FIELD` con `Extend` y `NrLums` en x e y), y al
+    importar DIALux las sustituye por marcadores que hay que cambiar por luminarias reales.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
   - Python en Windows es **3.14 ARM64**, y todo `requirements.txt` se instala con él (shapely
     incluido). Las 3 pruebas pasan en la VM (16/9/2026).

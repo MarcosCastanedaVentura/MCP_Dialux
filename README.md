@@ -30,6 +30,11 @@ y el uso de cada zona con su referencia de la norma.*
 *Lo que la herramienta entiende, y que es lo que acaba en DIALux. Las cotas del dibujo sirven de
 comprobación: si no cuadran con las salas reconstruidas, avisa.*
 
+![El edificio ya importado en DIALux evo](docs/imagenes/3-edificio-en-dialux.png)
+
+*El resultado: el mismo plano ya levantado en DIALux evo, con sus paredes y su altura, listo para
+colocar luminarias y calcular.*
+
 ---
 
 ## Por qué existe

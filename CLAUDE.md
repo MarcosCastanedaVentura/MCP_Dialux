@@ -139,9 +139,13 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - **Importar un segundo STF NO añade: sustituye** lo que hubiera en el proyecto. Con un fichero
     por planta solo se puede tener una planta por proyecto.
   - El STF **no guarda el nivel de cada sala**, así que dos plantas en su sitio real se solapan.
-    Comprobado el 21/9/2026 con un sondeo de ocho nombres candidatos (Z, Z0, Base, BaseHeight,
-    Level, Elevation, FloorHeight, Offset): las nueve salas salieron al nivel del suelo. **No
-  seguir buscando el campo a ciegas**: si hace falta de verdad, pedir la especificación a DIAL.
+    Comprobado a ciegas y AGOTADO el 21 y el 22/9/2026. **No volver a probar nombres de campo.**
+    Descartados: Z, Z0, Base, BaseHeight, Level, Elevation, FloorHeight, Offset, Storey, Floor,
+    FloorLevel, Niveau, ZOffset, BaseZ, LowerEdge y Bottom; escribir los puntos del contorno con
+    tercera coordenada (`Point1=X Y Z`); y una sección `[STOREY.S1]` aparte a la que la sala hace
+    referencia. En los tres casos todas las salas salen al nivel del suelo.
+    Marcos pidió la especificación a DIAL por correo el 22/9/2026 y **está esperando respuesta**:
+    hasta que llegue, el nivel de planta se pone a mano en DIALux.
   - **Las salas que se solapan se PIERDEN**, no se reparten en edificios como dice la
     documentación de DIAL: probado el 21/9/2026 con las dos plantas de junio en su sitio real,
     y en DIALux solo apareció una sala. Por eso las plantas van separadas.

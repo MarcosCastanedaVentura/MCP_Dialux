@@ -20,6 +20,16 @@ Se usa hablando con un asistente de IA, sin tocar la línea de comandos:
 > con las medidas reconstruidas. En Archivos hay una columna de 0,66 × 0,63 m en (22,18 ; 6,65)
 > que tendrás que poner a mano.
 
+![El plano de ejemplo, tal como sale del CAD](docs/imagenes/1-plano-original.png)
+
+*El punto de partida: muros dibujados como líneas sueltas, el enunciado escrito dentro del dibujo
+y el uso de cada zona con su referencia de la norma.*
+
+![Las salas reconstruidas](docs/imagenes/2-salas-reconstruidas.png)
+
+*Lo que la herramienta entiende, y que es lo que acaba en DIALux. Las cotas del dibujo sirven de
+comprobación: si no cuadran con las salas reconstruidas, avisa.*
+
 ---
 
 ## Por qué existe
@@ -138,6 +148,17 @@ con un desplazamiento redondo que la herramienta indica, y cada sala lleva su pl
 - Las plantas de un edificio **se colocan a mano** dentro de DIALux, por lo que se explica arriba.
 - Probado con planos de AutoCAD 2023 y 2024 en metros; otros orígenes pueden necesitar ajustes.
 
+## Probarlo sin tener un plano
+
+El repositorio trae un plano de ejemplo, `ejemplos/plano-ejemplo.dxf`, con el mismo estilo que los
+de clase: muros de doble línea, huecos de puerta, una columna, el enunciado escrito dentro y las
+cotas. Es el de las imágenes de arriba, y se puede regenerar con
+`python ejemplos/generar_plano_ejemplo.py`.
+
+Basta con pedirle al asistente:
+
+> Construye el edificio de `ejemplos/plano-ejemplo.dxf`
+
 ## Instalación
 
 Requisitos:
@@ -195,7 +216,9 @@ dialux/
   norma.py             las tablas de la UNE-EN 12464-1, leídas del PDF
   stf.py               escribir el fichero que importa DIALux evo
   construir.py         del plano al edificio
-pruebas/               25 pruebas, sobre planos de examen reales
+ejemplos/              un plano de ejemplo para probar la herramienta sin material de clase
+docs/imagenes/         las imágenes de este README
+pruebas/               27 pruebas, sobre el plano de ejemplo y sobre planos de examen reales
 ```
 
 Los planos de clase, el PDF de la norma y las fichas de luminarias **no se incluyen** en el

@@ -11,6 +11,11 @@ De ahí salen las prioridades: **que acierte y que explique por qué**, no que s
 escale. Una solución del MCP que esté mal y parezca bien es peor que no tener MCP, porque Marcos se
 "corregiría" hacia el error.
 
+**El objetivo, fijado el 20/9/2026:** que se le pase el ejercicio de clase o de examen —el plano
+con su enunciado dentro— y **devuelva el edificio construido**: estancias con sus medidas y
+alturas, y las luminarias colocadas. Marcos lo importa en DIALux, abre su propia solución al lado
+y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
+
 ---
 
 ## 1. LO QUE NO SE TOCA
@@ -42,10 +47,8 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
 
 - **Probar con los exámenes reales** de `material/examenes/`, no con planos inventados. Los planos
   de clase son de la profesora (AutoCAD 2023/2024) y son los que hay que saber leer.
-- **Verificar antes de construir** lo que no se sabe seguro. En concreto, qué formatos de
-  intercambio importa de verdad la versión de DIALux evo de Marcos (STF es del DIALux clásico 4.x;
-  no está comprobado que evo lo acepte). Se prueba un fichero de ejemplo en la VM antes de escribir
-  el generador.
+- **Verificar antes de construir** lo que no se sabe seguro. Se prueba un fichero de ejemplo en
+  la VM antes de dar por bueno un formato o un campo.
 - **Decir lo que no funciona** y lo que está sin verificar. Marcos es estudiante de Ingeniería
   Alimentaria, no programador: explicar el porqué en términos de iluminación y de uso, no solo de
   código.
@@ -101,8 +104,23 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
 - **SDK de MCP 2.x** (`mcp==2.2.0`): `FastMCP` ya no existe con ese nombre, ahora es
   `from mcp.server.mcpserver import MCPServer`. Los ejemplos de internet con
   `mcp.server.fastmcp` son de la versión 1 y no arrancan.
-- La versión instalada en la VM es **DIALux evo 14.0**. Qué formatos importa (STF, IFC…) se
-  comprueba contra esa versión.
+- La versión instalada en la VM es **DIALux evo 14.0**. Su menú Archivo → Importar (visto el
+  20/9/2026) ofrece: Plano, **Archivo IFC (marcado PRO, de pago: descartado)**, **Archivo STF**,
+  Espacios interiores DX4, Archivo de luminarias, Sistema de luz diurna, muebles, imágenes y
+  layout. **La vía para construir el edificio es STF**, y las luminarias se pueden meter aparte
+  con "Archivo de luminarias" (ahí entrarán los .ldt cuando los haya).
+- **STF comprobado en evo 14 el 20/9/2026**: importa las estancias con su nombre, contorno,
+  altura y plano de trabajo, y las formas en L salen bien. Dos cosas medidas:
+  - **Donde acaba la pared de una sala vecina tiene que haber un vértice.** Un pasillo cuya pared
+    tocaba a dos salas entraba con una diagonal cruzándolo de esquina a esquina; con el vértice
+    en la unión, limpio. Lo hace solo `_vertices_de_vecinos` en `stf.py`.
+  - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
+    estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
+    renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
+- **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
+  `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
+  y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:
+  ficheros de prueba en `material/pruebas_stf/`.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
   - Python en Windows es **3.14 ARM64**, y todo `requirements.txt` se instala con él (shapely
     incluido). Las 3 pruebas pasan en la VM (16/9/2026).
@@ -136,3 +154,11 @@ medición con los exámenes que lo justifica; si se cambia, se vuelve a medir.
 Las fichas de luminarias de `material/luminarias/` son las hojas de datos PDF de
 luminaires.dialux.com (flujo, potencia, montaje, medidas). **No traen la fotometría** (LDT/ULD),
 que hará falta para calcular.
+
+---
+
+## 5. RECURSOS
+
+- **Texturas para DIALux:** [Architextures](https://architextures.org). Es donde Marcos busca las
+  texturas de los materiales (suelos, paredes, techos) para DIALux evo. Si un ejercicio pide un
+  acabado concreto, recomendar buscarlo ahí antes que en otra web.

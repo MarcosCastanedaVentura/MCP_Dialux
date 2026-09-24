@@ -24,9 +24,16 @@ def test_se_leen_las_cuatro_salas_y_cuadran_las_cotas():
     assert oficina["altura_sala_m"] == 3.0 and oficina["altura_plano_trabajo_m"] == 0.85
     assert len(oficina["obstaculos"]) == 1  # la columna
 
+    # Los huecos de los muros se leen como puertas y ventanas: la de fachada es ventana por ser
+    # ancha, la estrecha de fachada es la entrada, y la que da al pasillo es una puerta.
+    assert [(a["tipo"], a["ancho_m"]) for a in oficina["aberturas"]] == [
+        ("puerta", 1.2), ("ventana", 2.0), ("puerta", 1.0)]
+
 
 def test_el_ejemplo_genera_su_stf(tmp_path):
     salida = plano_a_stf(PLANO, carpeta_destino=tmp_path)
     assert salida["escrito"] and "faltan" not in salida
     texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
     assert "NrRooms=4" in texto and "Height=3" in texto
+    assert "Furn1=door" in texto and "Furn2=win" in texto
+    assert any("ventana" in a for a in salida["avisos"])

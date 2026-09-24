@@ -69,3 +69,15 @@ def test_altura_distinta_para_una_sala(tmp_path):
     # Los nombres llevan la planta detrás ("Archivos [segunda]"), así que se busca por el principio.
     alturas = {e["nombre"].split(" [")[0]: e["altura_m"] for e in salida["plantas"][0]["estancias"]}
     assert alturas["Archivos"] == 4.5 and alturas["Baños"] == 3
+
+
+def test_nombres_genericos_como_los_de_dialux(tmp_path):
+    salida = plano_a_stf(_plano("ExamenFinal-Junio-Dialux-26.dwg"), altura_m=3,
+                         nombres_genericos=True, nombre_proyecto="Ejercicio 3",
+                         carpeta_destino=tmp_path)
+    nombres = [e["nombre"] for p in salida["plantas"] for e in p["estancias"]]
+    assert nombres == [f"Local {i}" for i in range(1, 8)]
+    texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
+    assert "Name=Ejercicio 3" in texto
+    # Sin rastro del uso ni de la planta en los nombres de las salas.
+    assert "Archivos" not in texto and "[segunda]" not in texto

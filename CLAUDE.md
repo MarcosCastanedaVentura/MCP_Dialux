@@ -175,9 +175,13 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     `R_Ceiling` y `R_Floor`.
   - **No hay nivel de planta ni zona marginal**: una sala es un polígono 2D con suelo y techo
     planos. Deja de ser una sospecha y pasa a ser un límite del formato.
-  - **Ventanas y puertas sí se pueden escribir** (`Furn<n>=win` / `door` / `skylight`, con
-    posición y tamaño); los muebles corrientes se escriben pero DIALux **no los lee** al
-    importar, así que las columnas se quedan a mano.
+  - Ventanas y puertas se pueden escribir (`Furn<n>=win` / `door` / `skylight`), **pero DIALux
+    evo 14 no las importa**: sondeo del 22/9/2026 con seis salas (coordenadas del plano y de la
+    sala, con alféizar y a ras de suelo, ventana y puerta) y ninguna aparece. La especificación
+    es de DIALux 4; el importador de evo solo levanta las salas. Se escriben igualmente porque
+    son correctas y las lee el DIALux clásico, y los huecos van a la lista `a_mano`.
+    **Cuidado al mirar una captura en 3D desde arriba**: el borde de una pared parece un hueco.
+    Para comprobar si hay hueco, vista de frente y a ras de suelo.
   - Las luminarias admiten **retícula** (`Type=FIELD` con `Extend` y `NrLums` en x e y), y al
     importar DIALux las sustituye por marcadores que hay que cambiar por luminarias reales.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
@@ -189,6 +193,15 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     La dirección es la del Mac en la red NAT de VMware (vmnet8), que no cambia al cambiar de
     wifi; se monta con `net use Z: \\<ip-del-mac>\MCP_Dialux /user:<usuario> /persistent:yes`.
   - El usuario de Windows y el del Mac no se llaman igual: ojo al escribir rutas.
+
+---
+
+### Nombres de las salas
+
+Por defecto salen del plano (el uso que pone la profesora). Con `nombres_genericos` salen como
+"Local 1", "Local 2"…, que es como DIALux evo nombra las salas creadas a mano, y el proyecto lleva
+el nombre que se le pase. Lo pidió Marcos el 22/9/2026 para entregar los trabajos con el aspecto
+de un proyecto normal de DIALux. El edificio y la planta no se pueden nombrar desde el fichero.
 
 ---
 

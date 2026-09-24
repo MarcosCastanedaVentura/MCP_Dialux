@@ -3,9 +3,9 @@
 Sirve para dos cosas: mirar lo que se ha generado sin abrir DIALux, y comparar el edificio del
 MCP con otro fichero, por ejemplo uno exportado por otro programa.
 
-**Límite que conviene tener claro:** DIALux evo no exporta STF, así que un proyecto montado a
-mano en evo no se puede convertir a este formato para compararlo. La comparación vale entre
-ficheros STF: dos versiones generadas, o uno del MCP contra uno de un CAD que sí exporte.
+DIALux evo no exporta STF, pero **sí exporta el plano a DWG**, y ese DWG se lee con
+`export_dialux.py`. Por eso `comparar` acepta las dos cosas: así se puede contrastar el edificio
+que generó el MCP con el que Marcos ha montado a mano y exportado desde DIALux.
 
 El formato es texto plano con secciones `[TAG]` y líneas `clave=valor`, y las claves no
 distinguen mayúsculas (lo dice la especificación, y los ficheros de otros programas lo aprovechan).
@@ -150,10 +150,22 @@ def _emparejar(salas_a: list[dict], salas_b: list[dict]) -> list[tuple[dict | No
     return parejas
 
 
+def _leer_cualquiera(ruta: str | Path) -> dict:
+    """Lee un .stf del MCP o un .dwg/.dxf exportado por DIALux evo, lo que le echen."""
+    if Path(ruta).suffix.lower() in (".dwg", ".dxf"):
+        from .export_dialux import leer as leer_export
+        return leer_export(ruta)
+    return leer(ruta)
+
+
 def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
-    """Qué se diferencia entre dos ficheros STF, sala por sala."""
-    a, b = leer(ruta_a), leer(ruta_b)
+    """Qué se diferencia entre dos edificios, sala por sala.
+
+    Cada uno puede ser un `.stf` o un `.dwg` exportado desde DIALux evo.
+    """
+    a, b = _leer_cualquiera(ruta_a), _leer_cualquiera(ruta_b)
     diferencias, iguales, solo_a, solo_b = [], [], [], []
+    sin_comparar: set[str] = set()
 
     for sala_a, sala_b in _emparejar(a["salas"], b["salas"]):
         if sala_b is None:
@@ -165,15 +177,24 @@ def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
         propias = []
         for clave, titulo in CAMPOS:
             va, vb = sala_a.get(clave), sala_b.get(clave)
-            if va is None and vb is None:
+            if va is None or vb is None:
+                # Un dato que solo está en uno de los dos no es una diferencia: es que ese
+                # formato no lo guarda. El DWG que exporta DIALux, por ejemplo, no trae el factor
+                # de mantenimiento ni las luminarias.
+                if not (va is None and vb is None):
+                    sin_comparar.add(titulo)
                 continue
-            if va is None or vb is None or abs(va - vb) > TOLERANCIA:
+            if abs(va - vb) > TOLERANCIA:
                 propias.append({"que": titulo, "en_a": va, "en_b": vb})
-        muebles_a = len(sala_a.get("muebles", []))
-        muebles_b = len(sala_b.get("muebles", []))
-        if muebles_a != muebles_b:
-            propias.append({"que": "número de muebles (huecos y columnas)",
-                            "en_a": muebles_a, "en_b": muebles_b})
+        # En un STF los huecos y las columnas son "muebles"; en el DWG exportado, "objetos" (los
+        # huecos no salen). Se comparan solo las columnas, que es lo que hay en los dos.
+        columnas_a = len(sala_a.get("objetos", [])) or len(
+            [m for m in sala_a.get("muebles", []) if m["tipo"] == "objeto"])
+        columnas_b = len(sala_b.get("objetos", [])) or len(
+            [m for m in sala_b.get("muebles", []) if m["tipo"] == "objeto"])
+        if columnas_a != columnas_b:
+            propias.append({"que": "número de columnas u objetos",
+                            "en_a": columnas_a, "en_b": columnas_b})
         nombre = sala_a["nombre"]
         if sala_b["nombre"] != nombre:
             propias.append({"que": "nombre", "en_a": nombre, "en_b": sala_b["nombre"]})
@@ -187,6 +208,9 @@ def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
         "con_diferencias": diferencias,
         "solo_en_a": solo_a,
         "solo_en_b": solo_b,
+        **({"sin_comparar": sorted(sin_comparar)} if sin_comparar else {}),
         "resumen": (f"{len(iguales)} sala(s) iguales, {len(diferencias)} con diferencias, "
-                    f"{len(solo_a)} solo en el primero y {len(solo_b)} solo en el segundo."),
+                    f"{len(solo_a)} solo en el primero y {len(solo_b)} solo en el segundo."
+                    + (f" No se ha podido comparar: {', '.join(sorted(sin_comparar))}, porque uno "
+                       "de los dos ficheros no lo guarda." if sin_comparar else "")),
     }

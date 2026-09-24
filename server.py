@@ -80,16 +80,19 @@ def leer_stf(ruta: str) -> dict:
 
 
 @mcp.tool()
-def comparar_stf(ruta_a: str, ruta_b: str) -> dict:
-    """Compara dos ficheros .stf y dice en qué se diferencian, sala por sala.
+def comparar_edificios(ruta_a: str, ruta_b: str) -> dict:
+    """Compara dos edificios y dice en qué se diferencian, sala por sala.
+
+    Cada uno puede ser un .stf generado por `construir_edificio` o un .dwg exportado desde
+    DIALux evo (Exportar → Exportar en un archivo nuevo, con todas las capas marcadas). Así se
+    puede contrastar el edificio del MCP con el que el alumno ha montado a mano.
 
     Empareja las salas por nombre, y si no coinciden, por superficie. Devuelve las iguales, las
     que cambian y en qué (altura, plano de trabajo, superficie, factor de mantenimiento,
-    reflectancias, luminarias, muebles), y las que solo están en uno de los dos.
+    reflectancias, luminarias, columnas), y las que solo están en uno de los dos.
 
-    Ojo al usarla para corregir un ejercicio: DIALux evo NO exporta STF, así que un proyecto
-    montado a mano en evo no se puede convertir a este formato. Esto compara ficheros STF entre
-    sí, no un STF contra un proyecto de evo.
+    Lo que NO se puede comparar así: las puertas y ventanas (el DWG exportado no las trae) ni la
+    zona marginal.
     """
     return _stf.comparar(ruta_a, ruta_b)
 

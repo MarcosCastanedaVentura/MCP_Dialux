@@ -199,6 +199,15 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     wifi; se monta con `net use Z: \\<ip-del-mac>\MCP_Dialux /user:<usuario> /persistent:yes`.
   - El usuario de Windows y el del Mac no se llaman igual: ojo al escribir rutas.
 
+- **DIALux evo SÍ exporta el plano a DWG** (Exportar → Exportar en un archivo nuevo), aunque no
+  exporte STF: descubierto por Marcos el 24/9/2026. Con eso se puede leer su proyecto hecho a
+  mano y compararlo con el generado. El DWG trae capas separadas: `DLX_CALC` (superficie de
+  cálculo de cada sala, de donde sale el contorno), `DLX_DESC` (nombres), `DLX_CONT` (muros en
+  3D) y `DLX_OBJ` (objetos, como bloques). Dos trampas medidas: declara **pulgadas**
+  ($INSUNITS=1) aunque se exporte en metros, y la envolvente exterior se exporta **con el
+  forjado** (3,2 m donde la sala mide 3), por lo que la altura se saca de la más repetida entre
+  los muros que tocan la sala. **IFC sigue siendo de pago también al exportar.**
+
 ---
 
 ### Nombres de las salas
@@ -221,7 +230,8 @@ dialux/cad/
   plano.py           leer_plano: junta todo y comprueba contra las cotas
 dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 12464-1 desde el PDF
 dialux/stf.py        escribir el STF que importa DIALux evo
-dialux/leer_stf.py   leer_stf y comparar_stf: qué hay dentro de un STF y qué cambia entre dos
+dialux/leer_stf.py   leer_stf y comparar_edificios: qué hay dentro y qué cambia entre dos
+dialux/export_dialux.py  leer el DWG que exporta evo (capas DLX_CALC, DLX_DESC, DLX_CONT, DLX_OBJ)
 dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
 salida/              los STF generados — no entra en git
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)

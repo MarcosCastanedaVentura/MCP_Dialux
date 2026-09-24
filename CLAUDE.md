@@ -36,7 +36,14 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
    - Lo que solo tiene sentido en Windows (automatizar la ventana de DIALux) va aislado en su
      propio módulo y se importa solo en Windows, para que el resto arranque en el Mac.
 
-3. **No inventar datos de norma ni de luminarias.** Los valores exigidos por la UNE-EN 12464-1
+3. **Un ejercicio es UN edificio.** Lo que en el plano son plantas distintas (segunda, tercera…)
+   son plantas del mismo edificio, nunca edificios separados. Regla de Marcos del 21/9/2026,
+   después de recibir el examen de junio como dos edificios sueltos. Solo se hacen varios
+   edificios si él lo pide. El STF no sabe de niveles (ver sección 3), así que mientras no se
+   encuentre la forma de decirlo en el fichero, hay que explicarle cómo dejarlo en un edificio
+   dentro de DIALux.
+
+4. **No inventar datos de norma ni de luminarias.** Los valores exigidos por la UNE-EN 12464-1
    (Em, UGRL, U₀, Ra por tipo de tarea) salen de la copia de la norma de Marcos, leídos de su PDF, y
    se enseña de qué fila salen para que se pueda revisar. Los datos fotométricos salen del fichero de la luminaria (LDT/ULD/
    IES), nunca de memoria. Si falta un dato, se pide; no se supone.
@@ -127,6 +134,24 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
     estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
     renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
+- **Un solo fichero STF por ejercicio, con las plantas una al lado de otra** (decidido el
+  20/9/2026 después de probar las tres opciones en evo 14). Dos hechos medidos:
+  - **Importar un segundo STF NO añade: sustituye** lo que hubiera en el proyecto. Con un fichero
+    por planta solo se puede tener una planta por proyecto.
+  - El STF **no guarda el nivel de cada sala**, así que dos plantas en su sitio real se solapan.
+    Comprobado el 21/9/2026 con un sondeo de ocho nombres candidatos (Z, Z0, Base, BaseHeight,
+    Level, Elevation, FloorHeight, Offset): las nueve salas salieron al nivel del suelo. **No
+  seguir buscando el campo a ciegas**: si hace falta de verdad, pedir la especificación a DIAL.
+  - **Las salas que se solapan se PIERDEN**, no se reparten en edificios como dice la
+    documentación de DIAL: probado el 21/9/2026 con las dos plantas de junio en su sitio real,
+    y en DIALux solo apareció una sala. Por eso las plantas van separadas.
+  Así que `construir.py` desplaza cada planta en X y redondea a múltiplo de 10 (`PASO`), porque
+  ese número Marcos lo resta a mano en DIALux; devuelve cuánto en `desplazada_x_m`. Y cada sala
+  lleva la planta en el nombre ("Archivos [segunda]") para saber cuáles borrar al duplicar.
+
+  **El método de Marcos para dejarlo en un edificio** (21/9/2026): importar, duplicar la planta,
+  borrar de cada copia las salas de las otras plantas y llevar cada planta a su origen restando
+  su desplazamiento.
 - **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
   exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
   ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres

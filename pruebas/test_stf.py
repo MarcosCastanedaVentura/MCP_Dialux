@@ -53,10 +53,15 @@ def test_forma_en_ele_se_respeta(tmp_path):
 
 def test_reflectancias_y_mantenimiento_solo_si_se_dan(tmp_path):
     texto = _contenido(tmp_path, [Estancia("Sala", rectangulo(5, 4), altura_m=3)])
-    assert "R_Ceiling" not in texto and "MaintenanceFactor" not in texto
+    assert "R_Ceiling" not in texto and "MF=" not in texto
     texto = _contenido(tmp_path, [Estancia("Sala", rectangulo(5, 4), altura_m=3,
-                                           reflectancia_techo=0.7, factor_mantenimiento=0.8)])
-    assert "R_Ceiling=0.7" in texto and "MaintenanceFactor=0.8" in texto
+                                           reflectancia_techo=0.7, reflectancia_suelo=0.2,
+                                           reflectancia_paredes=0.5, factor_mantenimiento=0.7)])
+    # Los nombres son los de la especificación oficial de STF 1.0.5.
+    assert "R_Ceiling=0.7" in texto and "R_Floor=0.2" in texto
+    assert "MF=0.7" in texto and "MaintenanceFactor" not in texto
+    # Una reflectancia por pared: la pared <n> va del punto <n> al <n>+1.
+    assert all(f"R_Wall{i}=0.5" in texto for i in (1, 2, 3, 4))
 
 
 def test_no_se_escribe_un_edificio_imposible(tmp_path):

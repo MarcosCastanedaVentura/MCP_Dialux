@@ -5,11 +5,16 @@ contorno, altura, plano de trabajo, reflectancias, puertas y ventanas, y luminar
 Se eligió frente a IFC porque **IFC en DIALux evo 14 es de la versión PRO** (visto en el menú de
 Marcos el 20/9/2026) y STF no.
 
-**La especificación NO es pública**: DIAL la manda por correo si se la pides. Lo que hay aquí
-está deducido de dos programas de código abierto que escriben STF, el exportador de Revit
-(kmorin/STF-Exporter) y el DIALux_Toolkit de BHoM. Por eso cada campo que DIALux no acepte se
-corrige probando contra evo 14 en la máquina virtual, y por eso este módulo empieza escribiendo
-lo mínimo: primero se comprueba qué importa, y luego se añade.
+**La especificación no es pública, pero DIAL la manda por correo a quien la pide**: Marcos la
+recibió el 22/9/2026 (STF 1.0.5, marzo de 2009) y está en `material/`, fuera de git porque el
+documento va marcado como confidencial. Lo que este módulo escribe sigue esa especificación;
+antes estaba deducido de dos exportadores de código abierto y por eso el factor de mantenimiento
+se escribía con un nombre inventado y DIALux lo ignoraba.
+
+Dos límites del formato, ya confirmados por el documento y no por sondeos: una sala es un
+polígono 2D con suelo y techo planos, **sin nivel de planta**, y **no hay zona marginal**. Los
+muebles corrientes (una columna) se escriben pero DIALux no los lee al importar; las ventanas y
+las puertas sí.
 
 Unidades: metros y grados. El origen es la esquina de la planta.
 """
@@ -110,12 +115,18 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
                    f"WorkingPlane={_num(e.plano_trabajo_m)}", f"NrPoints={len(e.contorno)}"]
         lineas += [f"Point{i}={_num(x)} {_num(y)}" for i, (x, y) in enumerate(e.contorno, start=1)]
         for etiqueta, valor in (("R_Ceiling", e.reflectancia_techo),
-                                ("R_Wall", e.reflectancia_paredes),
                                 ("R_Floor", e.reflectancia_suelo)):
             if valor is not None:
                 lineas.append(f"{etiqueta}={_num(valor)}")
+        if e.reflectancia_paredes is not None:
+            # R_Wall<n> es la pared entre el punto n y el n+1: una por tramo, no una para todas.
+            for i in range(1, len(e.contorno) + 1):
+                lineas.append(f"R_Wall{i}={_num(e.reflectancia_paredes)}")
         if e.factor_mantenimiento is not None:
-            lineas.append(f"MaintenanceFactor={_num(e.factor_mantenimiento)}")
+            # "MF", no "MaintenanceFactor": ese nombre me lo inventé y DIALux lo ignoraba en
+            # silencio, así que las salas entraban con el factor por defecto (0,8) y no con el
+            # del enunciado. Corregido el 22/9/2026 con la especificación oficial delante.
+            lineas.append(f"MF={_num(e.factor_mantenimiento)}")
         lineas.append(f"NrLums={len(e.luminarias)}")
         for i, lum in enumerate(e.luminarias, start=1):
             lineas += [f"Lum{i}={lum.nombre}",

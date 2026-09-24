@@ -139,9 +139,13 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - **Importar un segundo STF NO añade: sustituye** lo que hubiera en el proyecto. Con un fichero
     por planta solo se puede tener una planta por proyecto.
   - El STF **no guarda el nivel de cada sala**, así que dos plantas en su sitio real se solapan.
-    Comprobado el 21/9/2026 con un sondeo de ocho nombres candidatos (Z, Z0, Base, BaseHeight,
-    Level, Elevation, FloorHeight, Offset): las nueve salas salieron al nivel del suelo. **No
-  seguir buscando el campo a ciegas**: si hace falta de verdad, pedir la especificación a DIAL.
+    Comprobado a ciegas y AGOTADO el 21 y el 22/9/2026. **No volver a probar nombres de campo.**
+    Descartados: Z, Z0, Base, BaseHeight, Level, Elevation, FloorHeight, Offset, Storey, Floor,
+    FloorLevel, Niveau, ZOffset, BaseZ, LowerEdge y Bottom; escribir los puntos del contorno con
+    tercera coordenada (`Point1=X Y Z`); y una sección `[STOREY.S1]` aparte a la que la sala hace
+    referencia. En los tres casos todas las salas salen al nivel del suelo.
+    Marcos pidió la especificación a DIAL por correo el 22/9/2026 y **está esperando respuesta**:
+    hasta que llegue, el nivel de planta se pone a mano en DIALux.
   - **Las salas que se solapan se PIERDEN**, no se reparten en edificios como dice la
     documentación de DIAL: probado el 21/9/2026 con las dos plantas de junio en su sitio real,
     y en DIALux solo apareció una sala. Por eso las plantas van separadas.
@@ -160,10 +164,22 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   prefiere poner esas dos cosas a mano, que son rápidas.** Por eso `construir_edificio` las
   devuelve en `a_mano` con el valor y la posición calculados. Si algún día aparece el nombre
   bueno del campo, se añade a `stf.py` y se quita de ahí.
-- **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
-  `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
-  y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:
-  ficheros de prueba en `material/pruebas_stf/`.
+- **La especificación oficial de STF (1.0.5) la tiene Marcos desde el 22/9/2026**, enviada por
+  el soporte de DIAL a petición suya. Está en `material/STF file format.pdf`, **fuera de git: el
+  documento va marcado como confidencial**. No subirlo ni copiar sus tablas al repositorio
+  público; usarlo para escribir el código es para lo que lo mandan.
+  Lo que aclaró, y que antes estaba deducido de los exportadores de código abierto:
+  - El factor de mantenimiento es **`MF`**. `MaintenanceFactor`, que estaba escrito antes, no
+    existe: DIALux lo ignoraba y las salas entraban con el 0,8 por defecto.
+  - Las reflectancias de pared son **`R_Wall<n>`**, una por tramo (del punto n al n+1), además de
+    `R_Ceiling` y `R_Floor`.
+  - **No hay nivel de planta ni zona marginal**: una sala es un polígono 2D con suelo y techo
+    planos. Deja de ser una sospecha y pasa a ser un límite del formato.
+  - **Ventanas y puertas sí se pueden escribir** (`Furn<n>=win` / `door` / `skylight`, con
+    posición y tamaño); los muebles corrientes se escriben pero DIALux **no los lee** al
+    importar, así que las columnas se quedan a mano.
+  - Las luminarias admiten **retícula** (`Type=FIELD` con `Extend` y `NrLums` en x e y), y al
+    importar DIALux las sustituye por marcadores que hay que cambiar por luminarias reales.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
   - Python en Windows es **3.14 ARM64**, y todo `requirements.txt` se instala con él (shapely
     incluido). Las 3 pruebas pasan en la VM (16/9/2026).

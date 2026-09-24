@@ -117,7 +117,11 @@ DIAL la envía por correo a quien la pide.
 El generador de este proyecto se escribió deduciendo el formato de dos exportadores de código
 abierto —[STF-Exporter](https://github.com/kmorin/STF-Exporter) para Revit y
 [DIALux_Toolkit](https://github.com/BHoM/DIALux_Toolkit) de BHoM— y validando cada campo
-importando ficheros de prueba en DIALux evo 14. Lo que se ha averiguado probando:
+importando ficheros de prueba en DIALux evo 14. Después, el soporte de DIAL envió la
+especificación oficial a quien la pidió, que confirmó los hallazgos y corrigió un campo deducido
+mal. El documento es confidencial y no se incluye aquí.
+
+Lo que se averiguó probando, antes de tener el documento:
 
 | Comprobación | Resultado |
 |---|---|
@@ -125,7 +129,7 @@ importando ficheros de prueba en DIALux evo 14. Lo que se ha averiguado probando
 | Pared que toca a dos salas sin vértice en la unión | La sala entra cruzada por una diagonal. Se corrige partiendo la pared |
 | Importar un segundo STF en el mismo proyecto | **Sustituye** el proyecto, no añade. Todo tiene que ir en un fichero |
 | Dos salas en el mismo sitio (dos plantas superpuestas) | Se pierden: solo sobrevive una |
-| Nivel o planta de cada sala | No existe. Probados ocho nombres de campo, ninguno funciona |
+| Nivel o planta de cada sala | No se ha encontrado. Probados 16 nombres de campo, los puntos del contorno con tercera coordenada y una sección de planta aparte: todas las salas salen al nivel del suelo. La especificación lo confirmó después: una sala es un polígono 2D, el formato no tiene plantas |
 | Columnas y zona marginal | No se han conseguido escribir; se devuelven con sus medidas para ponerlas a mano |
 
 Como el formato no sabe de plantas, las de un mismo edificio se escriben separadas en el plano,
@@ -150,7 +154,9 @@ con un desplazamiento redondo que la herramienta indica, y cada sala lleva su pl
 - Las **luminarias** todavía no se colocan: el edificio llega a DIALux vacío. El formato STF las
   admite y es el siguiente paso.
 - **Columnas y zona marginal** hay que ponerlas a mano, con los datos que da la herramienta.
-- Las plantas de un edificio **se colocan a mano** dentro de DIALux, por lo que se explica arriba.
+- Las plantas de un edificio **se colocan a mano** dentro de DIALux: el formato no sabe de
+  niveles, así que la herramienta las separa en el plano y explica cuánto hay que desplazar cada
+  una. Es la limitación más gorda que queda, y depende de conseguir la especificación del formato.
 - Probado con planos de AutoCAD 2023 y 2024 en metros; otros orígenes pueden necesitar ajustes.
 
 ## Probarlo sin tener un plano

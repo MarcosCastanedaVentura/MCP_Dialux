@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 
+from dialux import leer_stf as _stf  # noqa: E402
 from dialux import norma as _norma  # noqa: E402
 from dialux.construir import plano_a_stf as _plano_a_stf  # noqa: E402
 from dialux.cad.plano import leer_plano as _leer_plano  # noqa: E402
@@ -65,6 +66,32 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
     """
     return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas,
                         nombres_genericos=nombres_genericos, nombre_proyecto=nombre_proyecto)
+
+
+@mcp.tool()
+def leer_stf(ruta: str) -> dict:
+    """Lee un fichero .stf y dice qué edificio contiene, sin abrir DIALux.
+
+    Devuelve, de cada sala: nombre, contorno, superficie, medidas, altura, plano de trabajo,
+    factor de mantenimiento, reflectancias, número de luminarias y los muebles (ventanas, puertas
+    y columnas). Sirve para comprobar lo que se acaba de generar antes de importarlo.
+    """
+    return _stf.leer(ruta)
+
+
+@mcp.tool()
+def comparar_stf(ruta_a: str, ruta_b: str) -> dict:
+    """Compara dos ficheros .stf y dice en qué se diferencian, sala por sala.
+
+    Empareja las salas por nombre, y si no coinciden, por superficie. Devuelve las iguales, las
+    que cambian y en qué (altura, plano de trabajo, superficie, factor de mantenimiento,
+    reflectancias, luminarias, muebles), y las que solo están en uno de los dos.
+
+    Ojo al usarla para corregir un ejercicio: DIALux evo NO exporta STF, así que un proyecto
+    montado a mano en evo no se puede convertir a este formato. Esto compara ficheros STF entre
+    sí, no un STF contra un proyecto de evo.
+    """
+    return _stf.comparar(ruta_a, ruta_b)
 
 
 @mcp.tool()

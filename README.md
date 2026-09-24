@@ -56,6 +56,8 @@ equivocado.
 | `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, sus puertas y ventanas, más la lista de lo que hay que rematar a mano |
 | `requisitos_norma` | Una referencia de tabla, `"34.7"` | Ēm, U₀, Ra, UGR e iluminancias en paredes y techo, citando tabla, fila y página del PDF de la norma |
 | `buscar_en_norma` | Un texto, `"enfermería"` | Las filas de la norma que encajan, para encontrar la referencia cuando el enunciado no la da |
+| `leer_stf` | Un `.stf` | Qué edificio contiene: salas, medidas, alturas, muebles… sin abrir DIALux |
+| `comparar_stf` | Dos `.stf` | En qué se diferencian, sala por sala |
 
 ### Un ejemplo real
 
@@ -230,11 +232,12 @@ dialux/
   cad/enunciado.py     leer los datos del ejercicio de los textos del plano
   cad/plano.py         leer_plano: lo junta y lo comprueba contra las cotas
   norma.py             las tablas de la UNE-EN 12464-1, leídas del PDF
+  leer_stf.py          leer un STF y comparar dos entre sí
   stf.py               escribir el fichero que importa DIALux evo
   construir.py         del plano al edificio
 ejemplos/              un plano de ejemplo para probar la herramienta sin material de clase
 docs/imagenes/         las imágenes de este README
-pruebas/               27 pruebas, sobre el plano de ejemplo y sobre planos de examen reales
+pruebas/               37 pruebas, sobre el plano de ejemplo y sobre planos de examen reales
 ```
 
 Los planos de clase, el PDF de la norma y las fichas de luminarias **no se incluyen** en el

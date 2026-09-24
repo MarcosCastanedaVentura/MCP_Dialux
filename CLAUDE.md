@@ -221,6 +221,7 @@ dialux/cad/
   plano.py           leer_plano: junta todo y comprueba contra las cotas
 dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 12464-1 desde el PDF
 dialux/stf.py        escribir el STF que importa DIALux evo
+dialux/leer_stf.py   leer_stf y comparar_stf: qué hay dentro de un STF y qué cambia entre dos
 dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
 salida/              los STF generados — no entra en git
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)

@@ -36,4 +36,5 @@ def test_el_ejemplo_genera_su_stf(tmp_path):
     texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
     assert "NrRooms=4" in texto and "Height=3" in texto
     assert "Furn1=door" in texto and "Furn2=win" in texto
+    assert "Furn4=columna" in texto  # la columna de la oficina
     assert any("ventana" in a for a in salida["avisos"])

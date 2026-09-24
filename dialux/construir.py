@@ -124,6 +124,12 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 # nombre delante se sabe cuáles sin ir mirándolas una a una.
                 nombre = f"{nombre} [{planta['nombre'].split()[0].lower()}]"
             huecos = _aberturas(sala, alto_puerta_m, alfeizar_ventana_m, alto_ventana_m, altura)
+            columnas = [stf.Obstaculo("columna", tuple(o["centro_m"]), o["ancho_x_m"],
+                                      o["largo_y_m"], altura)
+                        for o in sala.get("obstaculos", [])]
+            for columna in columnas:
+                x, y = columna.centro_m
+                columna.centro_m = (x + desplazamiento, y)
             for hueco in huecos:
                 x, y = hueco.centro_m
                 hueco.centro_m = (x + desplazamiento, y)
@@ -134,6 +140,7 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 plano_trabajo_m=plano_trabajo,
                 factor_mantenimiento=sala.get("factor_mantenimiento"),
                 aberturas=huecos,
+                obstaculos=columnas,
             ))
 
         plantas.append({"nombre": planta["nombre"], "estancias": estancias,
@@ -216,8 +223,8 @@ def _nombres_repetidos(plantas: list[dict]) -> set[str]:
 def _a_mano(planta: dict, alto_puerta: float, alfeizar: float, alto_ventana: float) -> list[dict]:
     """Lo que hay que teclear en DIALux después de importar, sala por sala y con los números.
 
-    Aquí va todo lo que el importador de evo no coge: la zona marginal, las columnas y los huecos
-    de puertas y ventanas.
+    Aquí va lo que el importador de evo no coge: la zona marginal y los huecos de puertas y
+    ventanas. Las columnas sí entran, como cajas, así que no están en esta lista.
     """
     pendiente = []
     for sala in planta["salas"]:
@@ -231,11 +238,7 @@ def _a_mano(planta: dict, alto_puerta: float, alfeizar: float, alto_ventana: flo
                 for h in sala["aberturas"]]
         if sala.get("zona_marginal_m"):
             tareas["zona_marginal_m"] = sala["zona_marginal_m"]
-        if sala.get("obstaculos"):
-            tareas["columnas"] = [
-                {"centro_m": o["centro_m"], "ancho_x_m": o["ancho_x_m"],
-                 "largo_y_m": o["largo_y_m"], "alto_m": "hasta el techo"}
-                for o in sala["obstaculos"]]
+
         if tareas:
             pendiente.append({"sala": sala["nombre"], **tareas})
     return pendiente

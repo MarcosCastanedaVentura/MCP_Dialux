@@ -29,6 +29,8 @@ VERSION_STF = "1.0.5"
 
 # Material de ventanas y puertas: reflexión y color RGB, en el formato de la especificación.
 COLOR_HUECO = "52 215 164 63"
+# Una columna es obra vista: reflexión baja y gris.
+COLOR_OBSTACULO = "40 150 150 150"
 
 
 @dataclass
@@ -64,6 +66,24 @@ class Abertura:
 
 
 @dataclass
+class Obstaculo:
+    """Una columna o un pilar dentro de la sala.
+
+    En STF es un mueble con nombre libre. En DIALux evo los muebles **sí** se importan, como
+    cajas sin detalle, que para una columna es exactamente lo que hace falta (confirmado por el
+    soporte de DIAL el 24/9/2026; en DIALux 4 es al revés y los muebles se ignoran).
+
+    A diferencia de ventanas y puertas, el origen de un mueble es el CENTRO de su caja, también
+    en altura: una columna que va del suelo al techo tiene su centro a media altura.
+    """
+    nombre: str
+    centro_m: tuple[float, float]
+    ancho_x_m: float
+    largo_y_m: float
+    alto_m: float
+
+
+@dataclass
 class Estancia:
     nombre: str
     contorno: list[tuple[float, float]]
@@ -75,6 +95,7 @@ class Estancia:
     factor_mantenimiento: float | None = None
     luminarias: list[Luminaria] = field(default_factory=list)
     aberturas: list[Abertura] = field(default_factory=list)
+    obstaculos: list[Obstaculo] = field(default_factory=list)
 
     def validar(self) -> None:
         if len(self.contorno) < 3:
@@ -163,7 +184,7 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
                        f"Lum{i}.Pos={' '.join(_num(v) for v in lum.posicion)}",
                        f"Lum{i}.Rot={' '.join(_num(v) for v in lum.rotacion)}"]
         lineas.append("NrStruct=0")
-        lineas.append(f"NrFurns={len(e.aberturas)}")
+        lineas.append(f"NrFurns={len(e.aberturas) + len(e.obstaculos)}")
         for i, hueco in enumerate(e.aberturas, start=1):
             x, y = hueco.centro_m
             lineas += [f"Furn{i}={hueco.palabra}",
@@ -174,6 +195,16 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
                        # especificación pide escribirlo igualmente.
                        f"Furn{i}.Size={_num(hueco.ancho_m)} {_num(hueco.alto_m)} 0"]
             materiales.append([f"[{clave}.F{i}]", f"Poly.Color={COLOR_HUECO}"])
+        for j, obstaculo in enumerate(e.obstaculos, start=len(e.aberturas) + 1):
+            x, y = obstaculo.centro_m
+            lineas += [f"Furn{j}={obstaculo.nombre}",
+                       f"Furn{j}.Ref={clave}.F{j}",
+                       # El origen de un mueble es el centro de su caja, altura incluida.
+                       f"Furn{j}.Pos={_num(x)} {_num(y)} {_num(obstaculo.alto_m / 2)}",
+                       f"Furn{j}.Rot=0 0 0",
+                       f"Furn{j}.Size={_num(obstaculo.ancho_x_m)} {_num(obstaculo.largo_y_m)} "
+                       f"{_num(obstaculo.alto_m)}"]
+            materiales.append([f"[{clave}.F{j}]", f"Poly.Color={COLOR_OBSTACULO}"])
 
     for material in materiales:
         lineas += [""] + material

@@ -71,7 +71,16 @@ escale. Una solución del MCP que esté mal y parezca bien es peor que no tener 
   UNE-EN 12464-1:2022 (34.7 = tabla 34 Oficinas, fila Archivos).
 - **La norma es la copia de Marcos** (`material/norma/AlumbradoInterior-2022.pdf`), con licencia
   de la UPM por AENORmás para uso interno. Los valores exigidos (Em, U₀, Ra, RUGL…) se leen de
-  ese PDF al usarlos; **no se transcriben a un fichero del repo** ni se publican.
+  ese PDF (`dialux/norma.py`, caché en `cache/norma/`); **no se transcriben a un fichero del
+  repo** ni se publican. Única excepción: los valores de las pocas filas que usan los exámenes,
+  en `pruebas/test_norma.py`, porque sin ellos la prueba no comprueba nada.
+- Lectura de la norma medida el 16/9/2026: 319 filas, **303 de 303 comparables coinciden** con una
+  lectura independiente con pdftotext. 5 filas no se dan a propósito: 2 títulos de grupo
+  (19.2, 26.11) y 3 con casillas vacías en la propia norma (13.5, 13.8, 37.3). Dos trampas que ya
+  costaron filas: columnas en distinta posición en cada tabla, **incluso en la misma página** (se
+  localizan por la cabecera de cada tabla), y miles escritos "1 000" o "1000".
+- Cada fila tiene Ēm **requerido** (mínimo) y **modificado** (con los modificadores de contexto
+  del 5.3.3). Cuál vale en clase no está decidido: pendiente de preguntar a Marcos.
 - No todos los enunciados dan la referencia: el parcial no dice el local y enero dice "sala para
   actividad sanitaria (iluminación general)". La fila de la tabla en esos casos **la decide
   Marcos**, no el código. **Decidido por Marcos el 16/9/2026: 10.6 (Enfermería) en los dos.**
@@ -116,6 +125,7 @@ dialux/cad/
   geometria.py       reconstruir salas: cerrar huecos, poligonizar, separar muros de salas
   enunciado.py       leer los datos del ejercicio de los textos del plano
   plano.py           leer_plano: junta todo y comprueba contra las cotas
+dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 12464-1 desde el PDF
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)
 material/            exámenes, norma y fichas de luminarias — NO entra en git
 ```

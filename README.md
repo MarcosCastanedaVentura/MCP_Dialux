@@ -166,16 +166,36 @@ puertas y ventanas— se informa aparte en vez de contarlo como diferencia.
 - **Cada regla del código tiene al lado la medición que la justifica**, con la fecha en la que se
   comprobó.
 
-## Limitaciones
+## Con qué muros se choca DIALux evo
+
+Casi todo el trabajo manual que queda no es del programa que hay aquí, sino de lo que el
+ecosistema de DIALux evo deja o no deja hacer. Cada línea está comprobada importando ficheros en
+evo 14, y las tres primeras confirmadas además por el soporte de DIAL:
+
+| Lo que no se puede | Consecuencia |
+|---|---|
+| **El formato STF no guarda el nivel de una sala**: una sala es un polígono 2D con suelo y techo planos | Las plantas de un edificio se separan en el plano y se colocan a mano en DIALux. Se probaron 16 nombres de campo, la tercera coordenada en los puntos y una sección de planta aparte; la especificación oficial lo confirmó después |
+| **Importar un segundo STF sustituye el proyecto**, no añade | Todo el edificio tiene que ir en un solo fichero |
+| **Dos salas en el mismo sitio se pierden**: solo sobrevive una | Las plantas no pueden escribirse superpuestas |
+| **evo no importa ventanas ni puertas** del STF, aunque el formato las lleve (DIALux 4 sí) | Se escriben igualmente, y además se devuelven con su posición y tamaño para ponerlas a mano |
+| **evo sí importa los muebles**, como cajas (DIALux 4 no) | Las columnas entran solas |
+| **El formato no tiene zona marginal** | Se devuelve el valor del enunciado para teclearlo en la superficie de cálculo |
+| **Los nombres del edificio y de la planta los pone DIALux** ("STF Building", "STF Storey") | Se renombran con doble clic. El nombre del proyecto y los de las salas sí salen del fichero |
+| **IFC es de pago**, tanto al importar como al exportar | STF es el único camino gratuito |
+| **evo no exporta STF** | Para comparar un proyecto hecho a mano se usa su exportación a DWG |
+
+Dos rarezas de esa exportación a DWG, por si alguien la lee: el fichero **declara pulgadas**
+aunque se exporte en metros, y la envolvente exterior sale **con el forjado incluido**, midiendo
+3,2 m donde la sala mide 3. Las dos están resueltas en el código.
+
+## Limitaciones del proyecto
 
 - Las **luminarias** todavía no se colocan: el edificio llega a DIALux vacío. El formato STF las
   admite, incluso en retícula, y es el siguiente paso.
-- **Zona marginal, puertas y ventanas** hay que ponerlas a mano en DIALux evo, con los datos que
-  da la herramienta. Las columnas sí entran solas, como cajas.
-- Las plantas de un edificio **se colocan a mano** dentro de DIALux: el formato no sabe de
-  niveles, así que la herramienta las separa en el plano y explica cuánto hay que desplazar cada
-  una. Es la limitación más gorda que queda, y depende de conseguir la especificación del formato.
 - Probado con planos de AutoCAD 2023 y 2024 en metros; otros orígenes pueden necesitar ajustes.
+- La lectura de un plano se apoya en convenciones de dibujo (muros de doble línea, huecos en las
+  puertas, el enunciado como texto): con un plano muy distinto habría que medir de nuevo los
+  umbrales de `geometria.py`.
 
 ## Probarlo sin tener un plano
 

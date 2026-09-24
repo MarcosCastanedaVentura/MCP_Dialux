@@ -53,6 +53,16 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   Alimentaria, no programador: explicar el porqué en términos de iluminación y de uso, no solo de
   código.
 - **Git:** rama antes de commitear, nunca directo a `main`.
+- **Al terminar algo en el Mac, dejarlo listo en Windows** (pedido por Marcos el 20/9/2026). El
+  código llega solo por la carpeta compartida `Z:`, pero eso no basta. Antes de decir que está
+  hecho, decirle a Marcos, y solo lo que aplique:
+  1. **Reiniciar Claude Desktop en Windows** si se ha tocado `server.py` o cualquier módulo que
+     use: el servidor MCP se arranca al abrir Claude, y hasta entonces sigue el código viejo.
+  2. **Reinstalar el entorno de Windows** si ha cambiado `requirements.txt`:
+     `%USERPROFILE%\.venvs\mcp_dialux\Scripts\pip install -r Z:\requirements.txt`.
+  3. **Pasar las pruebas en Windows** si se ha tocado algo que dependa del sistema (rutas, ODA,
+     ficheros): `cd /d Z:\` y `%USERPROFILE%\.venvs\mcp_dialux\Scripts\python -m pytest -q pruebas`.
+  4. Decirle **qué pedirle al MCP** para probarlo, con la ruta en `Z:` ya escrita.
 
 ---
 
@@ -117,6 +127,14 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - Los nombres del **edificio y de la planta los pone DIALux**, no el fichero: con varias
     estancias salen "STF Building" y "STF Storey"; con una sola, el nombre de la estancia. Se
     renombran con doble clic en evo. El nombre del PROYECTO sí sale del fichero.
+- **Lo que NO se ha conseguido meter en el STF: la zona marginal y las columnas.** Ni el
+  exportador de Revit ni el de BHoM las escriben (los dos ponen `NrStruct=0`), así que no hay
+  ejemplo real del que copiar los nombres de esos campos. Hay dos ficheros de sondeo con nombres
+  candidatos en `material/pruebas_stf/` (pruebaA y pruebaB), sin probar todavía.
+  **Decisión de Marcos (20/9/2026): no va a instalar DIALux 4 para sacar la especificación;
+  prefiere poner esas dos cosas a mano, que son rápidas.** Por eso `construir_edificio` las
+  devuelve en `a_mano` con el valor y la posición calculados. Si algún día aparece el nombre
+  bueno del campo, se añade a `stf.py` y se quita de ahí.
 - **La especificación de STF no es pública** (DIAL la manda por correo si se pide). Lo que escribe
   `dialux/stf.py` está deducido de dos exportadores de código abierto: kmorin/STF-Exporter (Revit)
   y BHoM/DIALux_Toolkit. Por eso cada campo se comprueba importando en evo 14 antes de fiarse:
@@ -144,6 +162,9 @@ dialux/cad/
   enunciado.py       leer los datos del ejercicio de los textos del plano
   plano.py           leer_plano: junta todo y comprueba contra las cotas
 dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 12464-1 desde el PDF
+dialux/stf.py        escribir el STF que importa DIALux evo
+dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
+salida/              los STF generados — no entra en git
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)
 material/            exámenes, norma y fichas de luminarias — NO entra en git
 ```

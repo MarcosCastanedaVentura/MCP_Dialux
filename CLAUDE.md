@@ -178,7 +178,9 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   - **Confirmado por el soporte de DIAL el 24/9/2026, y es al revés en cada programa:** en
     **evo** las ventanas y las puertas NO se importan y **los muebles SÍ**, como cajas sin
     detalle; en **DIALux 4** se importan las ventanas y las puertas y se ignoran los muebles.
-    Por eso las columnas van como mueble (`Furn<n>=columna`) y entran solas, y los huecos se
+    **Comprobado en evo el 24/9/2026**: la columna del plano de ejemplo aparece como una caja
+    del suelo al techo en su sitio. Por eso las columnas van como mueble (`Furn<n>=columna`) y
+    entran solas, y los huecos se
     escriben igualmente —son correctos para DIALux 4— pero en evo salen en la lista `a_mano`.
     Ojo: los muebles son `Furn`; `Struct` en STF son agrupaciones de LUMINARIAS, y por eso el
     primer intento de meter columnas con `Struct` no dio nada.

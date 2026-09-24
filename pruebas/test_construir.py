@@ -49,7 +49,10 @@ def test_las_plantas_van_en_un_stf_y_separadas(tmp_path):
     # Lo que el STF no lleva sale como tarea a mano, con los números ya puestos.
     archivos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Archivos")
     assert archivos["zona_marginal_m"] == 0.2
-    assert archivos["columnas"][0]["ancho_x_m"] == 0.657
+    # La columna ya no es trabajo a mano: entra en el fichero como mueble.
+    assert "columnas" not in archivos
+    texto = Path(salida["ruta_stf"]).read_text(encoding="latin-1")
+    assert texto.count("=columna") == 2
     banos = next(t for t in salida["plantas"][0]["a_mano"] if t["sala"] == "Baños")
     assert banos["zona_marginal_m"] == 0.1 and "columnas" not in banos
 

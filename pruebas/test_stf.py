@@ -7,7 +7,7 @@ módulo es una prueba hecha en la máquina virtual.
 
 import pytest
 
-from dialux.stf import Abertura, Estancia, escribir, rectangulo
+from dialux.stf import Abertura, Estancia, Obstaculo, escribir, rectangulo
 
 
 def _contenido(tmp_path, estancias, **extra) -> str:
@@ -92,3 +92,21 @@ def test_ventanas_y_puertas(tmp_path):
 
 def test_sin_aberturas_no_hay_muebles(tmp_path):
     assert "NrFurns=0" in _contenido(tmp_path, [Estancia("Sala", rectangulo(5, 4), altura_m=3)])
+
+
+def test_columna_como_mueble(tmp_path):
+    """En DIALux evo los muebles SÍ se importan, como cajas: una columna es justo eso."""
+    sala = Estancia("Sala", rectangulo(5, 4), altura_m=3,
+                    obstaculos=[Obstaculo("columna", (2.0, 2.0), 0.6, 0.6, 3.0)])
+    texto = _contenido(tmp_path, [sala])
+    assert "NrFurns=1" in texto and "Furn1=columna" in texto
+    # El origen de un mueble es el centro de su caja: la columna va del suelo al techo.
+    assert "Furn1.Pos=2 2 1.5" in texto and "Furn1.Size=0.6 0.6 3" in texto
+
+
+def test_huecos_y_columnas_se_numeran_seguidos(tmp_path):
+    sala = Estancia("Sala", rectangulo(5, 4), altura_m=3,
+                    aberturas=[Abertura("puerta", (2.5, 0.0), 0.9, 2.1)],
+                    obstaculos=[Obstaculo("columna", (2.0, 2.0), 0.6, 0.6, 3.0)])
+    texto = _contenido(tmp_path, [sala])
+    assert "NrFurns=2" in texto and "Furn1=door" in texto and "Furn2=columna" in texto

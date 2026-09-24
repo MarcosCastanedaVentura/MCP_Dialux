@@ -26,13 +26,18 @@ python3 -m venv .venv
 
 ### En Windows (máquina virtual)
 
-La carpeta del proyecto se comparte con el Mac, así que el entorno de Windows va en **otra**
-carpeta, `.venv-windows`: si los dos se llamaran `.venv`, cada sistema rompería el del otro.
+La carpeta del proyecto está en el Mac y Windows la ve como la unidad de red `Z:` (compartida
+por SMB desde el Mac, en `\\192.168.110.1\MCP_Dialux`, la red interna de VMware, que no cambia al
+cambiar de wifi).
+
+El entorno de Python **no va en `Z:`**: instalar librerías sobre una unidad de red es lento y
+puede fallar. Va en el disco de Windows, y el código se lee de `Z:`.
 
 ```powershell
-py -m venv .venv-windows
-.venv-windows\Scripts\pip install -r requirements.txt
-.venv-windows\Scripts\python -m pytest -q pruebas
+py -m venv $HOME\.venvs\mcp_dialux
+~\.venvs\mcp_dialux\Scripts\pip install -r Z:\requirements.txt
+cd Z:\
+~\.venvs\mcp_dialux\Scripts\python -m pytest -q pruebas
 ```
 
 ## Conectar con Claude Desktop
@@ -53,15 +58,14 @@ Abre Claude Desktop → *Ajustes → Desarrollador → Editar configuración* y 
 }
 ```
 
-**Windows** (`%APPDATA%\Claude\claude_desktop_config.json`). Cambia `Z:\\MCP_Dialux` por la ruta
-donde aparezca la carpeta compartida:
+**Windows** (`%APPDATA%\Claude\claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "dialux": {
-      "command": "Z:\\MCP_Dialux\\.venv-windows\\Scripts\\python.exe",
-      "args": ["Z:\\MCP_Dialux\\server.py"]
+      "command": "C:\\Users\\marco\\.venvs\\mcp_dialux\\Scripts\\python.exe",
+      "args": ["Z:\\server.py"]
     }
   }
 }

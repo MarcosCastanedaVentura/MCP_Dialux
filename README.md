@@ -56,6 +56,8 @@ equivocado.
 | `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, sus puertas y ventanas, más la lista de lo que hay que rematar a mano |
 | `requisitos_norma` | Una referencia de tabla, `"34.7"` | Ēm, U₀, Ra, UGR e iluminancias en paredes y techo, citando tabla, fila y página del PDF de la norma |
 | `buscar_en_norma` | Un texto, `"enfermería"` | Las filas de la norma que encajan, para encontrar la referencia cuando el enunciado no la da |
+| `leer_stf` | Un `.stf` | Qué edificio contiene: salas, medidas, alturas, muebles… sin abrir DIALux |
+| `comparar_edificios` | Dos edificios, cada uno `.stf` o `.dwg` exportado de DIALux | En qué se diferencian, sala por sala |
 
 ### Un ejemplo real
 
@@ -139,6 +141,17 @@ Lo que se averiguó probando, antes de tener el documento:
 Como el formato no sabe de plantas, las de un mismo edificio se escriben separadas en el plano,
 con un desplazamiento redondo que la herramienta indica, y cada sala lleva su planta en el nombre
 (`Archivos [segunda]`) para poder repartirlas dentro de DIALux.
+
+## Comparar con el proyecto hecho a mano
+
+DIALux evo no exporta STF, pero sí exporta el plano a DWG. Ese DWG viene en capas
+(`DLX_CALC` con la superficie de cálculo de cada sala, `DLX_DESC` con los nombres, `DLX_CONT` con
+los muros en 3D y `DLX_OBJ` con los objetos), así que se puede leer y contrastar sala por sala con
+el edificio generado: medidas, superficies, alturas, plano de trabajo y columnas.
+
+Es lo que cierra el círculo del proyecto: montar el ejercicio a mano, exportarlo y ver en qué se
+diferencia del que sale del plano. Lo que el DWG no trae —factor de mantenimiento, luminarias,
+puertas y ventanas— se informa aparte en vez de contarlo como diferencia.
 
 ## Decisiones de diseño
 
@@ -230,11 +243,13 @@ dialux/
   cad/enunciado.py     leer los datos del ejercicio de los textos del plano
   cad/plano.py         leer_plano: lo junta y lo comprueba contra las cotas
   norma.py             las tablas de la UNE-EN 12464-1, leídas del PDF
+  leer_stf.py          leer un STF y comparar dos edificios
+  export_dialux.py     leer el DWG que exporta DIALux evo, para comparar con lo hecho a mano
   stf.py               escribir el fichero que importa DIALux evo
   construir.py         del plano al edificio
 ejemplos/              un plano de ejemplo para probar la herramienta sin material de clase
 docs/imagenes/         las imágenes de este README
-pruebas/               27 pruebas, sobre el plano de ejemplo y sobre planos de examen reales
+pruebas/               40 pruebas, sobre el plano de ejemplo y sobre planos de examen reales
 ```
 
 Los planos de clase, el PDF de la norma y las fichas de luminarias **no se incluyen** en el

@@ -33,9 +33,39 @@ COLOR_HUECO = "52 215 164 63"
 COLOR_OBSTACULO = "40 150 150 150"
 
 
+@dataclass(frozen=True)
+class TipoLuminaria:
+    """La luminaria del ejercicio: lo que la va a identificar dentro de DIALux.
+
+    La especificación pide una sección por tipo de luminaria con fabricante, referencia de pedido
+    y nombre, y dice a la vez que **DIALux solo escribe estos datos y los ignora al importar**. O
+    sea: las luminarias entran colocadas pero sin fotometría, como marcadores, y hay que
+    sustituirlas por la luminaria de verdad dentro de DIALux. Se escriben igual porque la
+    especificación las da por obligatorias y porque así el fichero dice qué luminaria era.
+
+    `flujo_lm` y `potencia_w` son los de la ficha de la luminaria, si se tienen. No sirven para
+    calcular: para eso hace falta la curva de distribución (.ldt o .ies).
+    """
+    nombre: str
+    fabricante: str = "sin especificar"
+    referencia: str = "sin especificar"   # OrderNr en la especificación
+    flujo_lm: float | None = None
+    potencia_w: float | None = None
+    caja_m: tuple[float, float, float] | None = None
+
+
 @dataclass
 class Luminaria:
-    nombre: str
+    """Una luminaria colocada, con su posición absoluta en la sala.
+
+    Se escriben una a una (`Lum<n>`) y no como campo de luminarias (`Type=FIELD`), aunque el
+    formato admita los dos. Dos motivos: en un campo, la especificación describe `Struct<n>.Pos`
+    solo como "punto de referencia" y deja el reparto a DIALux, mientras que una posición suelta
+    no admite interpretación; y en una sala que no es rectangular hay que quitar las posiciones
+    que caen fuera, lo que un campo rectangular no deja hacer. Si alguna vez interesa que DIALux
+    las trate como un grupo, el campo se añade aquí.
+    """
+    tipo: TipoLuminaria
     posicion: tuple[float, float, float]
     rotacion: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -156,6 +186,7 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
 
     claves = [f"ROOM.R{i}" for i, _ in enumerate(estancias, start=1)]
     materiales: list[list[str]] = []
+    tipos: dict[TipoLuminaria, str] = {}
     lineas = ["[VERSION]", f"STFF={VERSION_STF}", "Progname=MCP_Dialux", "Progvers=0.1", "",
               "[Project]", f"Name={proyecto}", f"Date={date.today():%Y-%m-%d}",
               f"Operator={autor}", f"NrRooms={len(estancias)}"]
@@ -180,9 +211,13 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
             lineas.append(f"MF={_num(e.factor_mantenimiento)}")
         lineas.append(f"NrLums={len(e.luminarias)}")
         for i, lum in enumerate(e.luminarias, start=1):
-            lineas += [f"Lum{i}={lum.nombre}",
+            if lum.tipo not in tipos:
+                tipos[lum.tipo] = f"LUMINAIRE.L{len(tipos) + 1}"
+            lineas += [f"Lum{i}={tipos[lum.tipo]}",
                        f"Lum{i}.Pos={' '.join(_num(v) for v in lum.posicion)}",
                        f"Lum{i}.Rot={' '.join(_num(v) for v in lum.rotacion)}"]
+        # NrStruct son las agrupaciones de luminarias (campos, líneas, círculos), no los muebles:
+        # aquí van sueltas, así que ninguna.
         lineas.append("NrStruct=0")
         lineas.append(f"NrFurns={len(e.aberturas) + len(e.obstaculos)}")
         for i, hueco in enumerate(e.aberturas, start=1):
@@ -205,6 +240,16 @@ def escribir(estancias: list[Estancia], destino: str | Path, proyecto: str = "MC
                        f"Furn{j}.Size={_num(obstaculo.ancho_x_m)} {_num(obstaculo.largo_y_m)} "
                        f"{_num(obstaculo.alto_m)}"]
             materiales.append([f"[{clave}.F{j}]", f"Poly.Color={COLOR_OBSTACULO}"])
+
+    for tipo, etiqueta in tipos.items():
+        lineas += ["", f"[{etiqueta}]", f"Manufacturer={tipo.fabricante}",
+                   f"OrderNr={tipo.referencia}", f"Name={tipo.nombre}"]
+        if tipo.caja_m:
+            lineas.append(f"Box={' '.join(_num(v) for v in tipo.caja_m)}")
+        if tipo.potencia_w is not None:
+            lineas.append(f"Load={_num(tipo.potencia_w)}")
+        if tipo.flujo_lm is not None:
+            lineas.append(f"Flux={_num(tipo.flujo_lm)}")
 
     for material in materiales:
         lineas += [""] + material

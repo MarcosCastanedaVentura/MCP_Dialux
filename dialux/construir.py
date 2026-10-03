@@ -20,6 +20,10 @@ Dos decisiones:
   salas salen como "Local 1", "Local 2"…, que es como las nombra DIALux al crearlas a mano, y el
   proyecto lleva el nombre que se le pase. El edificio y la planta no se pueden nombrar desde el
   fichero: los pone DIALux y se cambian con doble clic.
+- **Las luminarias se colocan, no se cuentan.** Si se dice cuántas van en cada sala, se reparten
+  en retícula (ver `luminarias.py`) y se escriben en el fichero. El número NO lo decide esta
+  herramienta: sale del cálculo, y el cálculo necesita la fotometría de la luminaria, que todavía
+  no está. Pedir el número es mejor que inventarlo (invariante 4).
 - **Lo que el plano no dice, se pide.** Si falta la altura de una sala no se escribe el fichero:
   se devuelve qué falta y para qué salas. Un edificio con una altura inventada parece correcto y
   es justo lo que no puede pasar (ver el invariante 3).
@@ -30,6 +34,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+from . import luminarias as reparto_luminarias
 from . import stf
 from .cad.plano import leer_plano
 
@@ -53,6 +58,10 @@ ALTO_VENTANA = 1.5       # m
 # Con `nombres_genericos`, las salas se numeran como las nombra DIALux evo al crearlas a mano.
 NOMBRE_GENERICO = "Local {n}"
 
+# Las luminarias se cuelgan en el techo salvo que se diga otra cosa: es el montaje de los
+# ejercicios de clase (empotradas o adosadas), y el plano nunca da la altura de suspensión.
+NOMBRE_LUMINARIA = "Luminaria del ejercicio"
+
 
 def _altura(sala: dict, altura_m: float | None, alturas: dict[str, float] | None) -> float | None:
     if alturas:
@@ -60,6 +69,16 @@ def _altura(sala: dict, altura_m: float | None, alturas: dict[str, float] | None
             if nombre.lower() in sala["nombre"].lower():
                 return valor
     return sala.get("altura_sala_m") or altura_m
+
+
+def _cuantas(sala: dict, luminarias: int | dict[str, int] | None) -> int | None:
+    """Cuántas luminarias van en esta sala: un número para todas o uno por sala, por nombre."""
+    if isinstance(luminarias, dict):
+        for nombre, valor in luminarias.items():
+            if nombre.lower() in sala["nombre"].lower():
+                return int(valor)
+        return None
+    return int(luminarias) if luminarias else None
 
 
 def _aberturas(sala: dict, alto_puerta: float, alfeizar: float, alto_ventana: float,
@@ -83,8 +102,16 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                 nombre_proyecto: str | None = None,
                 alto_puerta_m: float = ALTO_PUERTA,
                 alfeizar_ventana_m: float = ALFEIZAR_VENTANA,
-                alto_ventana_m: float = ALTO_VENTANA) -> dict:
-    """Construye el edificio del plano y escribe UN fichero STF con todas sus plantas."""
+                alto_ventana_m: float = ALTO_VENTANA,
+                luminarias: int | dict[str, int] | None = None,
+                altura_montaje_m: float | None = None,
+                luminaria: stf.TipoLuminaria | None = None) -> dict:
+    """Construye el edificio del plano y escribe UN fichero STF con todas sus plantas.
+
+    `luminarias` es cuántas van en cada sala: un número para todas, o un número por sala indexado
+    por nombre ({"Oficina": 12}). Las coloca en retícula; **cuántas hacen falta no lo decide esta
+    herramienta**, porque eso es el cálculo y necesita la fotometría de la luminaria.
+    """
     plano = leer_plano(ruta_plano)
     carpeta = Path(carpeta_destino) if carpeta_destino else CARPETA
     base = Path(ruta_plano).stem
@@ -99,6 +126,7 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
                       "edificio sin mirarlo, puede estar mal leído.")
 
     repetidos = _nombres_repetidos(plano["plantas"])
+    reticulas: dict[str, dict] = {}
     plantas = []
     desplazamiento = 0.0
     numero = 1
@@ -133,14 +161,27 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
             for hueco in huecos:
                 x, y = hueco.centro_m
                 hueco.centro_m = (x + desplazamiento, y)
+            contorno = [(x + desplazamiento, y) for x, y in sala["contorno_m"]]
+            puestas: list[stf.Luminaria] = []
+            if (cuantas := _cuantas(sala, luminarias)):
+                montaje = altura_montaje_m or altura
+                reparto = reparto_luminarias.reticula(
+                    contorno, cuantas, montaje, plano_trabajo,
+                    sala.get("zona_marginal_m") or 0.0)
+                puestas = [stf.Luminaria(luminaria or stf.TipoLuminaria(NOMBRE_LUMINARIA), p)
+                           for p in reparto["posiciones_m"]]
+                avisos += [f"{nombre}: {a}" for a in reparto["avisos"]]
+                reticulas[nombre] = {k: v for k, v in reparto.items()
+                                     if k not in ("posiciones_m", "avisos")}
             estancias.append(stf.Estancia(
                 nombre=nombre,
-                contorno=[(x + desplazamiento, y) for x, y in sala["contorno_m"]],
+                contorno=contorno,
                 altura_m=altura,
                 plano_trabajo_m=plano_trabajo,
                 factor_mantenimiento=sala.get("factor_mantenimiento"),
                 aberturas=huecos,
                 obstaculos=columnas,
+                luminarias=puestas,
             ))
 
         plantas.append({"nombre": planta["nombre"], "estancias": estancias,
@@ -167,6 +208,14 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
             f"en DIALux. Las alturas no las da el plano: puertas de {alto_puerta_m} m y ventanas "
             f"de {alto_ventana_m} m a {alfeizar_ventana_m} m del suelo.")
 
+    if reticulas:
+        avisos.append(
+            "Las luminarias van colocadas en retícula, una a una, con la posición que dice "
+            "'luminarias' en cada sala. DIALux **no lee la fotometría del STF** (lo dice la "
+            "especificación): entran como marcadores en su sitio y hay que cambiarlas por la "
+            "luminaria real del ejercicio. Sin verificar todavía en evo 14: compruébalo al "
+            "importar y dime qué sale.")
+
     if len(plantas) > 1:
         avisos.append(
             f"El edificio tiene {len(plantas)} plantas y van todas en el mismo fichero, una al "
@@ -183,7 +232,9 @@ def plano_a_stf(ruta_plano: str | Path, altura_m: float | None = None,
         **({"a_mano": planta["a_mano"]} if planta["a_mano"] else {}),
         "estancias": [{"nombre": e.nombre, "altura_m": e.altura_m,
                        "plano_trabajo_m": e.plano_trabajo_m,
-                       "vertices": len(e.contorno)} for e in planta["estancias"]],
+                       "vertices": len(e.contorno),
+                       **({"luminarias": reticulas[e.nombre]} if e.nombre in reticulas else {})}
+                      for e in planta["estancias"]],
     } for planta in plantas if planta["estancias"]]
 
     return {"fichero": plano["fichero"], "escrito": True, "ruta_stf": str(ruta),

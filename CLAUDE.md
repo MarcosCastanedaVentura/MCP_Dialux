@@ -208,6 +208,39 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     wifi; se monta con `net use Z: \\<ip-del-mac>\MCP_Dialux /user:<usuario> /persistent:yes`.
   - El usuario de Windows y el del Mac no se llaman igual: ojo al escribir rutas.
 
+- **La exportación a DWG de evo tiene DOS variantes, y traen cosas distintas** (medido el
+  3/10/2026 con el trabajo de clase de Marcos, `material/exportados/trabajo2-clase-2d.dwg`, 15
+  salas en 3 plantas con 20 luminarias):
+  - La que ya se leía (`material/exportados/prueba-export.dwg`) es **3D**: mallas
+    (`AcDbPolyFaceMesh`) en capas `DLX_CALC`, `DLX_CONT`, `DLX_DESC`, `DLX_OBJ`, con z de verdad,
+    de donde salen el contorno y la altura.
+  - La otra es **2D**: todo son segmentos de dos puntos (`AcDb3dPolyline`) con **z = 0**, así que
+    NO hay alturas ni plano de trabajo. En cambio trae tres cosas que la 3D no:
+    - **La planta de cada sala, en el nombre de la capa**: `DLX_FL0_CALC`, `DLX_FL1_CONT`,
+      `DLX_FL2_CONT`, más `DLX_ROOF` y `DLX_TERR_CONT`. Lo que el STF no sabe decir al entrar,
+      el DWG sí lo dice al salir.
+    - **Las luminarias** (esto estaba "sin verificar" hasta hoy: SÍ se exportan). Capa
+      `DLX_FL1_LUM 1` —el número es el índice del tipo de luminaria— con el símbolo de cada una
+      (dos cuadrados concéntricos, 0,600 y 0,545 m para un panel de 60×60), y capa
+      `DLX_FL1_LUMKEY_IDX` con el índice como texto. **El centro se saca del símbolo, no del
+      texto**: el texto va desplazado +0,30 m en x y en y (la esquina del cuadrado).
+    - **Las tablas de resultados**, como entidades `ACAD_TABLE` en la capa `0`, cuyo texto se
+      lee con `virtual_entities()` (los MTEXT, por filas): la **lista de luminarias**
+      (fabricante, artículo, número, lámpara, flujo, factor de degradación, potencia y cantidad),
+      una por edificio y otra por planta, y los **resultados por sala** (nombre, parámetro, mín.,
+      máx., media, mín./medio = U₀ y mín./máx.). Ahí está todo lo que hace falta para corregir.
+    - El nombre de sala de `DLX_FL<n>_DESC` lleva detrás su potencia específica: "Aula 1
+      (7,67 W/m²)", y "(/)" si la sala no está calculada.
+  - En las dos variantes el fichero declara pulgadas ($INSUNITS=1) y está en metros.
+  - **Las superficies de cálculo de la variante 2D no se poligonizan**: los segmentos de
+    `DLX_FL<n>_CALC` son la retícula de puntos y el borde a trazos. El contorno de las salas sale
+    de `DLX_FL<n>_CONT` cerrando huecos, como en los planos de clase.
+
+- **La regla de colocación de luminarias de Marcos es la del centro de casilla** (medido el
+  3/10/2026 en su Aula 1: 9,07 × 10,45 m con 20 luminarias en 4 × 5, separación 2,27 × 2,09 m y
+  1,13 / 1,04 m a los muros, o sea media separación justa). `dialux/luminarias.py` da lo mismo
+  al milímetro: 4 × 5, 2,268 × 2,090, 1,134 / 1,045.
+
 - **DIALux evo SÍ exporta el plano a DWG** (Exportar → Exportar en un archivo nuevo), aunque no
   exporte STF: descubierto por Marcos el 24/9/2026. Con eso se puede leer su proyecto hecho a
   mano y compararlo con el generado. El DWG trae capas separadas: `DLX_CALC` (superficie de
@@ -241,7 +274,9 @@ dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 124
 dialux/stf.py        escribir el STF que importa DIALux evo
 dialux/leer_stf.py   leer_stf y comparar_edificios: qué hay dentro y qué cambia entre dos
 dialux/luminarias.py repartir las luminarias de una sala en retícula (dónde van, no cuántas)
-dialux/export_dialux.py  leer el DWG que exporta evo (capas DLX_CALC, DLX_DESC, DLX_CONT, DLX_OBJ)
+dialux/corregir.py   corregir_trabajo: los resultados de DIALux contra lo que exige la norma
+dialux/export_dialux.py  leer el DWG que exporta evo, en sus dos variantes (3D con alturas; 2D
+                     con plantas, luminarias y tablas de resultados)
 dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
 salida/              los STF generados — no entra en git
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)

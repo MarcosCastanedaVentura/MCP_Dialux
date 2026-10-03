@@ -11,6 +11,7 @@ from mcp.server.mcpserver import MCPServer  # noqa: E402
 from dialux import leer_stf as _stf  # noqa: E402
 from dialux import luminarias as _luminarias  # noqa: E402
 from dialux import norma as _norma  # noqa: E402
+from dialux.corregir import corregir as _corregir  # noqa: E402
 from dialux.construir import plano_a_stf as _plano_a_stf  # noqa: E402
 from dialux.cad.plano import leer_plano as _leer_plano  # noqa: E402
 
@@ -97,15 +98,24 @@ def reticula_luminarias(ancho_m: float, largo_m: float, cuantas: int, altura_mon
 
 
 @mcp.tool()
-def leer_stf(ruta: str) -> dict:
-    """Lee un fichero .stf y dice qué edificio contiene, sin abrir DIALux.
+def leer_proyecto(ruta: str) -> dict:
+    """Dice qué edificio hay dentro de un fichero, sin abrir DIALux.
 
-    Devuelve, de cada sala: nombre, contorno, superficie, medidas, altura, plano de trabajo,
-    factor de mantenimiento, reflectancias, los muebles (ventanas, puertas y columnas) y las
-    luminarias con su posición. Sirve para comprobar lo que se acaba de generar antes de
-    importarlo.
+    Acepta un .stf (el que genera `construir_edificio`) y también el .dwg que exporta DIALux evo
+    (Exportar → Exportar en un archivo nuevo), en sus dos variantes:
+
+    - La exportación **3D** trae alturas de verdad.
+    - La exportación **2D** no trae alturas, pero sí **la planta de cada sala**, **las luminarias
+      colocadas** y **las tablas de resultados de DIALux** (iluminancia mínima, máxima, media y
+      uniformidad de cada sala), además de la lista de luminarias con flujo, factor de
+      degradación y potencia. Dice en 'variante' cuál ha leído, y en 'avisos' lo que esa variante
+      no puede dar.
+
+    De cada sala: nombre, planta si se sabe, contorno, superficie, medidas, altura, plano de
+    trabajo, factor de mantenimiento, reflectancias, muebles (ventanas, puertas y columnas),
+    luminarias con su posición y resultados si los hay.
     """
-    return _stf.leer(ruta)
+    return _stf._leer_cualquiera(ruta)
 
 
 @mcp.tool()
@@ -120,10 +130,37 @@ def comparar_edificios(ruta_a: str, ruta_b: str) -> dict:
     que cambian y en qué (altura, plano de trabajo, superficie, factor de mantenimiento,
     reflectancias, luminarias, columnas), y las que solo están en uno de los dos.
 
+    Compara también **las luminarias**: 'luminarias' dice, sala por sala, cuántas hay en cada
+    edificio y cuántas están en el mismo sitio. Cuéntaselo al alumno aunque coincidan: que
+    coincidan es justo lo que se quiere saber.
+
     Lo que NO se puede comparar así: las puertas y ventanas (el DWG exportado no las trae) ni la
-    zona marginal.
+    zona marginal. Y con la exportación 2D tampoco las alturas: eso sale en 'sin_comparar'.
     """
     return _stf.comparar(ruta_a, ruta_b)
+
+
+@mcp.tool()
+def corregir_trabajo(ruta: str, referencias: dict[str, str] | None = None,
+                     usar: str | None = None) -> dict:
+    """Corrige un trabajo de DIALux contra la UNE-EN 12464-1, sala por sala.
+
+    ruta: el .dwg que el alumno ha exportado de DIALux **después de calcular** (Exportar →
+      Exportar en un archivo nuevo). Los resultados salen de las tablas que DIALux escribe dentro
+      de ese DWG; un .stf no sirve, porque no lleva resultados.
+    referencias: la fila de la norma de cada sala, por nombre, p. ej. {"Aula 1": "44.1"}.
+    usar: "requerido" o "modificado" para quedarse con uno de los dos Ēm. Por defecto se dan los
+      dos, porque la norma da los dos y en clase no está decidido cuál se usa.
+
+    De cada sala corregida: lo medido (Ēm, mínima, máxima, U0, W/m²), lo exigido, qué cumple y qué
+    no, y 'fuente' con la tabla, la fila y la página del PDF: cítala siempre.
+
+    Las salas sin fila de la norma salen en 'sin_referencia_de_norma' con candidatas buscadas por
+    el nombre: **pregúntale al alumno cuál es, no la elijas tú**. Y dile lo que hay en
+    'no_se_comprueba_aqui' (Ra, RUGL y las iluminancias de paredes y techo), para que no crea que
+    un trabajo está entero revisado.
+    """
+    return _corregir(ruta, referencias=referencias, usar=usar)
 
 
 @mcp.tool()

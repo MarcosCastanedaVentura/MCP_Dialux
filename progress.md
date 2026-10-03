@@ -1,9 +1,9 @@
 # Estado del proyecto
 
-Última actualización: **3/10/2026**. Rama actual: `feat/luminarias`.
+Última actualización: **3/10/2026**. Rama actual: `feat/leer-export-2d`.
 Publicado en https://github.com/MarcosCastanedaVentura/MCP_Dialux (público, MIT).
 
-**Pruebas: 49 pasan** (lanzadas hoy, 3/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
+**Pruebas: 63 pasan** (lanzadas hoy, 3/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
 menos de un segundo y no tocan la red ni ninguna API de pago). No hay nada en rojo ni ningún apaño
 provisional en el código.
 
@@ -16,9 +16,10 @@ provisional en el código.
 | `leer_plano` | Funciona. Salas, medidas, columnas, huecos y los datos del enunciado escritos en el plano, comprobados contra las cotas |
 | `construir_edificio` | Funciona. Un STF por ejercicio, con salas, altura, plano de trabajo, factor de mantenimiento, columnas y huecos |
 | `requisitos_norma` / `buscar_en_norma` | Funcionan. UNE-EN 12464-1:2022 leída del PDF de Marcos, citando tabla, fila y página |
-| `leer_stf` | Funciona. Qué contiene un STF sin abrir DIALux |
 | `comparar_edificios` | Funciona. Compara dos edificios; cada uno puede ser `.stf` o el `.dwg` que exporta DIALux evo |
-| `reticula_luminarias` | Funciona en el Mac. Reparte N luminarias en una sala: retícula, separación, distancia al muro y posiciones. **Sin probar en DIALux todavía** |
+| `reticula_luminarias` | Funciona. Reparte N luminarias en una sala. **Validado contra el trabajo de clase**: el aula de Marcos sale 4 × 5 con 2,27 × 2,09 m y el MCP da lo mismo, 20 de 20 en el mismo sitio con desviación 0,000 m |
+| `leer_proyecto` | Funciona. Un `.stf` o el `.dwg` que exporta DIALux, en sus dos variantes (3D con alturas; 2D con plantas, luminarias y resultados) |
+| `corregir_trabajo` | Funciona. Los resultados de DIALux (Ēm, mínima, máxima, U₀) contra la fila de la norma, citando página |
 
 Comprobado importando en **DIALux evo 14** (máquina virtual): entran las salas con su contorno,
 altura y plano de trabajo, las formas en L, el factor de mantenimiento y **las columnas** (24/9).
@@ -47,11 +48,24 @@ Son dos cosas distintas y solo está hecha la primera:
    VM, o la web del fabricante (la primera es Endo Lighting, modelo `ERD7616S`).
 2. **Ēm requerido o Ēm modificado**: la norma da los dos (Archivos, 200 lx o 300 lx) y de eso
    depende el número de luminarias. Marcos tiene que decir cuál usan en clase.
-3. **Sin verificar**: si el DWG que exporta DIALux **trae las luminarias**. El proyecto que se
-   exportó no tenía ninguna, así que no se sabe. Prueba: meter una luminaria en el ejemplo,
-   exportar a `Z:\salida\prueba-export-con-luminaria.dwg` y mirar en qué capa aparece.
+3. ~~Si el DWG exportado trae las luminarias~~: **resuelto el 3/10/2026** con el trabajo de
+   clase. Sí las trae, en la capa `DLX_FL<planta>_LUM <indice>`, y además trae las tablas de
+   resultados de DIALux. De ahí sale `corregir_trabajo`.
 
 ---
+
+## Lo que sale del trabajo de clase (3/10/2026)
+
+`material/exportados/trabajo2-clase-2d.dwg` es el primer proyecto de verdad que se ha podido leer
+entero: 3 plantas, 15 locales y 20 luminarias. Lo que resolvió:
+
+- La exportación a DWG tiene **dos variantes**: la 3D (mallas, con alturas) y la 2D (plana, a
+  z = 0) que trae **la planta de cada sala en el nombre de la capa**, **las luminarias** y **las
+  tablas de resultados**. Las dos se leen; cada una avisa de lo que no puede dar.
+- La **regla de colocación** del MCP es la que usa Marcos: validado al milímetro contra su aula.
+- La **corrección** de su aula: Ēm 596 lx sobre 500 requeridos, pero **U₀ = 0,53 con 0,6
+  exigidos**. Medido sobre el plano útil entero y sin zona marginal puesta en su proyecto:
+  pendiente de que diga si la práctica la pedía, porque de ahí sale ese 0,53.
 
 ## Lo que se queda a mano en DIALux (y por qué)
 
@@ -91,17 +105,16 @@ importando ficheros, y lo primero confirmado por el soporte de DIAL con la espec
 
 ## Siguientes pasos, por orden
 
-1. **Importar `salida/plano-ejemplo.stf` en evo 14** y mirar tres cosas: si las luminarias
-   aparecen, en qué sitio, y como qué (se espera un marcador sin fotometría, porque la
-   especificación dice que evo ignora los datos de la luminaria al importar). De ahí sale si hay
-   que cambiar algo o si vale como está.
-2. **Conseguir la fotometría** y decidir requerido/modificado, para pasar de colocar a calcular
-   cuántas.
-3. **Comprobar si el DWG exportado trae luminarias**, para poder comparar las del alumno con las
-   calculadas.
-4. **Cuando haya fotometría**: cálculo del número de luminarias por el método de los lúmenes,
-   contraste con lo que exige la norma, y comprobar la separación contra el criterio de la
-   luminaria (ahora solo se devuelve la relación separación / altura útil, sin juzgarla).
+1. **Importar `salida/plano-ejemplo.stf` en evo 14** y mirar si las luminarias aparecen, dónde y
+   como qué (se espera un marcador sin fotometría: la especificación dice que evo ignora los datos
+   de la luminaria al importar). Es lo único del trabajo de estos días sin verificar en DIALux.
+2. **Decidir Ēm requerido o modificado** en clase. Mientras no esté decidido, `corregir_trabajo`
+   da los dos y no elige.
+3. **Conseguir la fotometría** (.ldt o .ies) para pasar de colocar a calcular cuántas.
+4. **Cuando haya fotometría**: número de luminarias por el método de los lúmenes, y comprobar la
+   separación contra el criterio de la luminaria (ahora solo se devuelve la relación separación /
+   altura útil, sin juzgarla). El rendimiento del local que se despeja de un trabajo ya corregido
+   (0,83 en el aula) sirve de contraste mientras llega.
 
 ### Recordatorio al terminar algo en el Mac
 

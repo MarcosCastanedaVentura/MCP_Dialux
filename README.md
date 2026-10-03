@@ -57,8 +57,9 @@ equivocado.
 | `reticula_luminarias` | Medidas de una sala y cuántas luminarias | Cómo queda el reparto: filas × columnas, separación, distancia al muro y la posición de cada una |
 | `requisitos_norma` | Una referencia de tabla, `"34.7"` | Ēm, U₀, Ra, UGR e iluminancias en paredes y techo, citando tabla, fila y página del PDF de la norma |
 | `buscar_en_norma` | Un texto, `"enfermería"` | Las filas de la norma que encajan, para encontrar la referencia cuando el enunciado no la da |
-| `leer_stf` | Un `.stf` | Qué edificio contiene: salas, medidas, alturas, muebles… sin abrir DIALux |
-| `comparar_edificios` | Dos edificios, cada uno `.stf` o `.dwg` exportado de DIALux | En qué se diferencian, sala por sala |
+| `leer_proyecto` | Un `.stf` o el `.dwg` que exporta DIALux | Qué edificio contiene: salas, plantas, medidas, alturas, muebles, luminarias y los resultados de DIALux si los trae, sin abrir el programa |
+| `comparar_edificios` | Dos edificios, cada uno `.stf` o `.dwg` exportado de DIALux | En qué se diferencian, sala por sala, **luminarias incluidas**: cuántas hay en cada uno y cuántas están en el mismo sitio |
+| `corregir_trabajo` | El `.dwg` de un proyecto ya calculado y la fila de la norma de cada sala | Qué cumple y qué no: Ēm y U₀ medidos contra los exigidos, citando tabla, fila y página |
 
 ### Un ejemplo real
 
@@ -184,11 +185,39 @@ evo 14, y las tres primeras confirmadas además por el soporte de DIAL:
 | **Los nombres del edificio y de la planta los pone DIALux** ("STF Building", "STF Storey") | Se renombran con doble clic. El nombre del proyecto y los de las salas sí salen del fichero |
 | **IFC es de pago**, tanto al importar como al exportar | STF es el único camino gratuito |
 | **evo no exporta STF** | Para comparar un proyecto hecho a mano se usa su exportación a DWG |
+| **La exportación a DWG tiene dos variantes y ninguna lo trae todo**: la 3D lleva alturas pero no luminarias ni plantas; la 2D lleva plantas, luminarias y los resultados, pero está toda a z = 0 | Se leen las dos y cada una dice en 'avisos' lo que no puede dar. Para comparar alturas, la 3D; para corregir, la 2D |
 | **evo no lee del STF la luminaria, solo su posición** (lo dice la propia especificación) | Las luminarias llegan colocadas pero como marcadores: la real se elige dentro de DIALux |
 
 Dos rarezas de esa exportación a DWG, por si alguien la lee: el fichero **declara pulgadas**
 aunque se exporte en metros, y la envolvente exterior sale **con el forjado incluido**, midiendo
 3,2 m donde la sala mide 3. Las dos están resueltas en el código.
+
+## Corregir un trabajo, que es para lo que existe
+
+Lo de arriba construye; esto comprueba. DIALux evo no exporta STF, pero **sí exporta el proyecto a
+DWG**, y dentro de ese DWG van sus propias tablas de resultados. De ahí sale la corrección: no hay
+ningún cálculo propio, son los números de DIALux contra los de la norma.
+
+Con un trabajo de clase real —un edificio de tres plantas con 15 locales, de los que uno estaba
+calculado— la herramienta devuelve esto del aula:
+
+| | Medido por DIALux | Exigido (fila 44.1, Aula – Actividades generales) |
+|---|---|---|
+| Ēm | 596 lx | 500 lx requerido / 1000 lx modificado |
+| U₀ | 0,53 | 0,60 |
+| Potencia específica | 7,67 W/m² | — |
+
+O sea: la iluminancia sobra y **la uniformidad no llega**, que es exactamente el tipo de fallo que
+uno no ve mirando el render. Los dos Ēm se dan sin elegir: la norma da el requerido y el
+modificado, y cuál piden en clase lo decide el alumno.
+
+Lo que **no** se puede corregir así, y la herramienta lo dice en cada sala para que nadie crea que
+el trabajo está entero revisado: Ra, RUGL (deslumbramiento) y las iluminancias de paredes, techo y
+zona circundante. DIALux las calcula, pero no las escribe en las tablas del DWG.
+
+De paso, de los propios resultados se despeja el rendimiento del local (Ēm = n·Φ·FM·η/S → η =
+0,83 en ese aula). No es un dato de catálogo, pero sirve para comprobar el orden de magnitud de un
+cálculo por el método de los lúmenes mientras no haya fotometría.
 
 ## Limitaciones del proyecto
 
@@ -272,6 +301,7 @@ dialux/
   norma.py             las tablas de la UNE-EN 12464-1, leídas del PDF
   leer_stf.py          leer un STF y comparar dos edificios
   luminarias.py        repartir las luminarias de una sala en retícula
+  corregir.py          contrastar los resultados de un trabajo con la norma
   export_dialux.py     leer el DWG que exporta DIALux evo, para comparar con lo hecho a mano
   stf.py               escribir el fichero que importa DIALux evo
   construir.py         del plano al edificio

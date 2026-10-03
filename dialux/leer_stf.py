@@ -13,6 +13,7 @@ distinguen mayúsculas (lo dice la especificación, y los ficheros de otros prog
 
 from __future__ import annotations
 
+import math
 import re
 from pathlib import Path
 
@@ -145,7 +146,54 @@ CAMPOS = [("altura_m", "altura"), ("plano_trabajo_m", "plano de trabajo"),
           ("reflectancia_techo", "reflectancia del techo"),
           ("reflectancia_suelo", "reflectancia del suelo"),
           ("reflectancia_paredes", "reflectancia de las paredes"),
-          ("luminarias", "número de luminarias")]
+          ("luminarias", "número de luminarias"),
+          # Solo los trae la exportación de DIALux, así que estos aparecen al comparar dos
+          # proyectos calculados; con un STF del MCP salen en "sin_comparar".
+          ("resultados.e_media_lx", "iluminancia media"),
+          ("resultados.e_min_lx", "iluminancia mínima"),
+          ("resultados.u0", "uniformidad U0"),
+          ("potencia_especifica_w_m2", "potencia específica")]
+
+# Dos luminarias a menos de esto son la misma. Da margen al redondeo del DWG y a que el MCP
+# coloque el centro con tres decimales.
+TOLERANCIA_LUMINARIA = 0.05  # m
+
+
+def _dato(sala: dict, clave: str):
+    """El valor de un campo, que puede estar dentro de otro ("resultados.u0")."""
+    for parte in clave.split("."):
+        if not isinstance(sala, dict):
+            return None
+        sala = sala.get(parte)
+    return sala
+
+
+def _comparar_luminarias(sala_a: dict, sala_b: dict) -> dict | None:
+    """Si las luminarias están en el mismo sitio en los dos edificios.
+
+    Cada luminaria de A se empareja con la más cercana de B que siga libre. Solo se miran x e y:
+    el STF guarda también la altura de montaje y el DWG exportado de la variante 2D no.
+    """
+    puestas_a = sala_a.get("luminarias_colocadas") or []
+    puestas_b = sala_b.get("luminarias_colocadas") or []
+    if not puestas_a or not puestas_b:
+        return None
+    libres = [tuple((l.get("posicion_m") or [None, None])[:2]) for l in puestas_b]
+    coinciden, desviacion = 0, 0.0
+    for luminaria in puestas_a:
+        posicion = tuple((luminaria.get("posicion_m") or [None, None])[:2])
+        if None in posicion:
+            continue
+        candidatas = [(math.dist(posicion, p), i) for i, p in enumerate(libres) if None not in p]
+        if not candidatas:
+            break
+        distancia, i = min(candidatas)
+        if distancia <= TOLERANCIA_LUMINARIA:
+            coinciden += 1
+            desviacion = max(desviacion, distancia)
+            libres[i] = (None, None)
+    return {"en_a": len(puestas_a), "en_b": len(puestas_b), "en_el_mismo_sitio": coinciden,
+            "desviacion_maxima_m": round(desviacion, 3)}
 
 
 def _emparejar(salas_a: list[dict], salas_b: list[dict]) -> list[tuple[dict | None, dict | None]]:
@@ -180,6 +228,7 @@ def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
     """
     a, b = _leer_cualquiera(ruta_a), _leer_cualquiera(ruta_b)
     diferencias, iguales, solo_a, solo_b = [], [], [], []
+    luminarias: list[dict] = []
     sin_comparar: set[str] = set()
 
     for sala_a, sala_b in _emparejar(a["salas"], b["salas"]):
@@ -191,7 +240,7 @@ def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
             continue
         propias = []
         for clave, titulo in CAMPOS:
-            va, vb = sala_a.get(clave), sala_b.get(clave)
+            va, vb = _dato(sala_a, clave), _dato(sala_b, clave)
             if va is None or vb is None:
                 # Un dato que solo está en uno de los dos no es una diferencia: es que ese
                 # formato no lo guarda. El DWG que exporta DIALux, por ejemplo, no trae el factor
@@ -210,20 +259,38 @@ def comparar(ruta_a: str | Path, ruta_b: str | Path) -> dict:
         if columnas_a != columnas_b:
             propias.append({"que": "número de columnas u objetos",
                             "en_a": columnas_a, "en_b": columnas_b})
+        if lum := _comparar_luminarias(sala_a, sala_b):
+            # Se informa siempre, coincidan o no: que coincidan es el resultado que se busca al
+            # comparar el edificio del MCP con el hecho a mano, y callarlo no dice nada.
+            luminarias.append({"sala": sala_a["nombre"], **lum})
+            if lum["en_el_mismo_sitio"] < max(lum["en_a"], lum["en_b"]):
+                propias.append({"que": "posición de las luminarias",
+                                "en_a": f"{lum['en_a']} luminaria(s)",
+                                "en_b": f"{lum['en_b']} luminaria(s)",
+                                "detalle": f"{lum['en_el_mismo_sitio']} en el mismo sitio "
+                                           f"(tolerancia {TOLERANCIA_LUMINARIA} m)"})
         nombre = sala_a["nombre"]
         if sala_b["nombre"] != nombre:
             propias.append({"que": "nombre", "en_a": nombre, "en_b": sala_b["nombre"]})
         (diferencias.append({"sala": nombre, "diferencias": propias}) if propias
          else iguales.append(nombre))
 
+    def resumen(fichero: dict) -> dict:
+        return {"fichero": fichero["fichero"], "salas": len(fichero["salas"]),
+                **({"variante": fichero["variante"]} if fichero.get("variante") else {}),
+                **({"plantas": fichero["plantas"]} if fichero.get("plantas") else {})}
+
+    avisos = [f"{f['fichero']}: {aviso}" for f in (a, b) for aviso in f.get("avisos", [])]
     return {
-        "a": {"fichero": a["fichero"], "salas": len(a["salas"])},
-        "b": {"fichero": b["fichero"], "salas": len(b["salas"])},
+        "a": resumen(a),
+        "b": resumen(b),
         "iguales": iguales,
         "con_diferencias": diferencias,
         "solo_en_a": solo_a,
         "solo_en_b": solo_b,
+        **({"luminarias": luminarias} if luminarias else {}),
         **({"sin_comparar": sorted(sin_comparar)} if sin_comparar else {}),
+        **({"avisos": avisos} if avisos else {}),
         "resumen": (f"{len(iguales)} sala(s) iguales, {len(diferencias)} con diferencias, "
                     f"{len(solo_a)} solo en el primero y {len(solo_b)} solo en el segundo."
                     + (f" No se ha podido comparar: {', '.join(sorted(sin_comparar))}, porque uno "

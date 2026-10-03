@@ -33,7 +33,7 @@ comprobación: si no cuadran con las salas reconstruidas, avisa.*
 ![El edificio ya importado en DIALux evo](docs/imagenes/3-edificio-en-dialux.png)
 
 *El resultado: el mismo plano ya levantado en DIALux evo, con sus paredes y su altura, listo para
-colocar luminarias y calcular.*
+calcular.*
 
 ---
 
@@ -53,7 +53,8 @@ equivocado.
 | Herramienta | Entrada | Salida |
 |---|---|---|
 | `leer_plano` | Un `.dwg` o `.dxf` | Plantas, salas, contornos, superficies, columnas y los datos del enunciado escritos en el plano, comprobados contra las cotas del dibujo |
-| `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, sus puertas y ventanas, más la lista de lo que hay que rematar a mano |
+| `construir_edificio` | Un `.dwg` o `.dxf` | Un fichero `.stf` que DIALux evo importa con las estancias levantadas, sus puertas y ventanas, las luminarias repartidas en retícula si se dice cuántas, más la lista de lo que hay que rematar a mano |
+| `reticula_luminarias` | Medidas de una sala y cuántas luminarias | Cómo queda el reparto: filas × columnas, separación, distancia al muro y la posición de cada una |
 | `requisitos_norma` | Una referencia de tabla, `"34.7"` | Ēm, U₀, Ra, UGR e iluminancias en paredes y techo, citando tabla, fila y página del PDF de la norma |
 | `buscar_en_norma` | Un texto, `"enfermería"` | Las filas de la norma que encajan, para encontrar la referencia cuando el enunciado no la da |
 | `leer_stf` | Un `.stf` | Qué edificio contiene: salas, medidas, alturas, muebles… sin abrir DIALux |
@@ -183,6 +184,7 @@ evo 14, y las tres primeras confirmadas además por el soporte de DIAL:
 | **Los nombres del edificio y de la planta los pone DIALux** ("STF Building", "STF Storey") | Se renombran con doble clic. El nombre del proyecto y los de las salas sí salen del fichero |
 | **IFC es de pago**, tanto al importar como al exportar | STF es el único camino gratuito |
 | **evo no exporta STF** | Para comparar un proyecto hecho a mano se usa su exportación a DWG |
+| **evo no lee del STF la luminaria, solo su posición** (lo dice la propia especificación) | Las luminarias llegan colocadas pero como marcadores: la real se elige dentro de DIALux |
 
 Dos rarezas de esa exportación a DWG, por si alguien la lee: el fichero **declara pulgadas**
 aunque se exporte en metros, y la envolvente exterior sale **con el forjado incluido**, midiendo
@@ -190,8 +192,13 @@ aunque se exporte en metros, y la envolvente exterior sale **con el forjado incl
 
 ## Limitaciones del proyecto
 
-- Las **luminarias** todavía no se colocan: el edificio llega a DIALux vacío. El formato STF las
-  admite, incluso en retícula, y es el siguiente paso.
+- Las luminarias **se colocan pero no se cuentan**: hay que decirle cuántas van en cada sala y las
+  reparte en retícula, con la separación y la distancia al muro calculadas. Cuántas hacen falta es
+  el cálculo luminotécnico, y para eso hace falta la fotometría de la luminaria (`.ldt` o `.ies`),
+  que no viene en las fichas PDF del catálogo. Es el siguiente paso.
+- Las luminarias entran en DIALux **como marcadores, sin fotometría**: la especificación de STF
+  dice que DIALux escribe los datos de la luminaria pero los ignora al importar, así que hay que
+  sustituirlas por la luminaria real del ejercicio. Están en su sitio, que es lo laborioso.
 - Probado con planos de AutoCAD 2023 y 2024 en metros; otros orígenes pueden necesitar ajustes.
 - La lectura de un plano se apoya en convenciones de dibujo (muros de doble línea, huecos en las
   puertas, el enunciado como texto): con un plano muy distinto habría que medir de nuevo los
@@ -264,6 +271,7 @@ dialux/
   cad/plano.py         leer_plano: lo junta y lo comprueba contra las cotas
   norma.py             las tablas de la UNE-EN 12464-1, leídas del PDF
   leer_stf.py          leer un STF y comparar dos edificios
+  luminarias.py        repartir las luminarias de una sala en retícula
   export_dialux.py     leer el DWG que exporta DIALux evo, para comparar con lo hecho a mano
   stf.py               escribir el fichero que importa DIALux evo
   construir.py         del plano al edificio

@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 
 from dialux import leer_stf as _stf  # noqa: E402
+from dialux import luminarias as _luminarias  # noqa: E402
 from dialux import norma as _norma  # noqa: E402
 from dialux.construir import plano_a_stf as _plano_a_stf  # noqa: E402
 from dialux.cad.plano import leer_plano as _leer_plano  # noqa: E402
@@ -43,7 +44,9 @@ def leer_plano(ruta: str) -> dict:
 def construir_edificio(ruta_plano: str, altura_m: float | None = None,
                        alturas: dict[str, float] | None = None,
                        nombres_genericos: bool = False,
-                       nombre_proyecto: str | None = None) -> dict:
+                       nombre_proyecto: str | None = None,
+                       luminarias: int | dict[str, int] | None = None,
+                       altura_montaje_m: float | None = None) -> dict:
     """Construye el edificio del plano y escribe un fichero STF por planta para DIALux evo.
 
     Cada sala entra con su contorno real, su nombre, su altura y su plano de trabajo. El alumno
@@ -56,6 +59,10 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
     nombres_genericos: si es True, las salas se llaman "Local 1", "Local 2"…, como las nombra
       DIALux al crearlas a mano, en vez de con el uso que pone el plano.
     nombre_proyecto: el nombre del proyecto dentro del fichero; por defecto, el del plano.
+    luminarias: cuántas luminarias se colocan en cada sala, en retícula. Un número para todas, o
+      uno por sala por nombre, p. ej. {"Oficina": 12, "Archivos": 6}. **Este número lo da el
+      alumno o sale del cálculo: no lo elijas tú.** Si no se pasa, el edificio va sin luminarias.
+    altura_montaje_m: a qué altura cuelgan, desde el suelo; por defecto, en el techo.
 
     Cuéntale SIEMPRE lo que venga en 'a_mano': son la zona marginal y las columnas, que el STF no
     lleva y hay que poner en DIALux después de importar. Van con el valor y la posición ya
@@ -65,7 +72,28 @@ def construir_edificio(ruta_plano: str, altura_m: float | None = None,
     de que use el edificio.
     """
     return _plano_a_stf(ruta_plano, altura_m=altura_m, alturas=alturas,
-                        nombres_genericos=nombres_genericos, nombre_proyecto=nombre_proyecto)
+                        nombres_genericos=nombres_genericos, nombre_proyecto=nombre_proyecto,
+                        luminarias=luminarias, altura_montaje_m=altura_montaje_m)
+
+
+@mcp.tool()
+def reticula_luminarias(ancho_m: float, largo_m: float, cuantas: int, altura_montaje_m: float,
+                        plano_trabajo_m: float = 0.0, zona_marginal_m: float = 0.0) -> dict:
+    """Cómo quedan `cuantas` luminarias repartidas en una sala rectangular, sin necesitar el plano.
+
+    Devuelve la retícula (filas × columnas), la separación en x y en y, la distancia al muro (que
+    es media separación), la posición de cada luminaria y la relación entre la separación y la
+    altura útil.
+
+    Dos cosas que hay que contarle al alumno tal cual salen:
+    - Si el número pedido no forma retícula (7, por ejemplo), se sube al siguiente que sí, y
+      entonces hay más luz de la calculada: aparece en 'avisos'.
+    - Si la separación es admisible NO lo dice esta herramienta: depende de la curva de
+      distribución de la luminaria. Dale el número de 'separacion_entre_altura_util' y que lo
+      compare con el criterio de separación de su luminaria.
+    """
+    return _luminarias.reticula([(0.0, 0.0), (ancho_m, 0.0), (ancho_m, largo_m), (0.0, largo_m)],
+                                cuantas, altura_montaje_m, plano_trabajo_m, zona_marginal_m)
 
 
 @mcp.tool()
@@ -73,8 +101,9 @@ def leer_stf(ruta: str) -> dict:
     """Lee un fichero .stf y dice qué edificio contiene, sin abrir DIALux.
 
     Devuelve, de cada sala: nombre, contorno, superficie, medidas, altura, plano de trabajo,
-    factor de mantenimiento, reflectancias, número de luminarias y los muebles (ventanas, puertas
-    y columnas). Sirve para comprobar lo que se acaba de generar antes de importarlo.
+    factor de mantenimiento, reflectancias, los muebles (ventanas, puertas y columnas) y las
+    luminarias con su posición. Sirve para comprobar lo que se acaba de generar antes de
+    importarlo.
     """
     return _stf.leer(ruta)
 

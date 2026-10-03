@@ -187,8 +187,17 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     **Cuidado al mirar una captura en 3D desde arriba**: el borde de una pared parece un hueco.
     Para comprobar si hay hueco, vista de frente y a ras de suelo. Pasó el 22/9/2026: di por
     bueno un hueco que era una sombra.
-  - Las luminarias admiten **retícula** (`Type=FIELD` con `Extend` y `NrLums` en x e y), y al
-    importar DIALux las sustituye por marcadores que hay que cambiar por luminarias reales.
+  - Las luminarias se pueden escribir de dos formas: **sueltas** (`Lum<n>`, `Lum<n>.Pos`,
+    `Lum<n>.Rot`, con `NrLums`) o como **grupo** (`NrStruct` + una sección `Type=FIELD` con
+    `Extend` y `NrLums` en x e y). **Se escriben sueltas** (decidido el 3/10/2026): en un grupo la
+    especificación describe `Struct<n>.Pos` solo como "punto de referencia" y el reparto lo hace
+    DIALux, mientras que una posición suelta no admite interpretación; y en una sala que no es
+    rectangular hay que quitar las posiciones que caen fuera, que un campo rectangular no permite.
+  - Cada tipo de luminaria necesita su sección (`[LUMINAIRE.L1]` con `Manufacturer`, `OrderNr`,
+    `Name`, y opcionales `Box`, `Load`, `Flux`), y la especificación dice que **DIALux escribe esos
+    datos pero los ignora al importar**: las luminarias entran colocadas y sin fotometría, como
+    marcadores, y la luminaria de verdad se elige dentro de DIALux. **Sin verificar en evo 14**:
+    hay que importar `salida/plano-ejemplo.stf` y ver qué aparece.
 - La máquina virtual es **VMware Fusion con Windows 11 ARM** (Mac con chip Apple). Consecuencias:
   - Python en Windows es **3.14 ARM64**, y todo `requirements.txt` se instala con él (shapely
     incluido). Las 3 pruebas pasan en la VM (16/9/2026).
@@ -231,6 +240,7 @@ dialux/cad/
 dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 12464-1 desde el PDF
 dialux/stf.py        escribir el STF que importa DIALux evo
 dialux/leer_stf.py   leer_stf y comparar_edificios: qué hay dentro y qué cambia entre dos
+dialux/luminarias.py repartir las luminarias de una sala en retícula (dónde van, no cuántas)
 dialux/export_dialux.py  leer el DWG que exporta evo (capas DLX_CALC, DLX_DESC, DLX_CONT, DLX_OBJ)
 dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
 salida/              los STF generados — no entra en git

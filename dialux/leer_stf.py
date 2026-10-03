@@ -56,6 +56,18 @@ def _puntos(seccion: dict[str, str]) -> list[tuple[float, float]]:
     return puntos
 
 
+def _luminarias(seccion: dict[str, str]) -> list[dict]:
+    """Las luminarias colocadas una a una, con su posición. Los campos (`Struct`) no se leen."""
+    puestas = []
+    for i in range(1, int(_numero(seccion.get("NRLUMS")) or 0) + 1):
+        posicion = (seccion.get(f"LUM{i}.POS") or "").split()
+        puestas.append({
+            "tipo": seccion.get(f"LUM{i}"),
+            "posicion_m": [float(v) for v in posicion[:3]] if len(posicion) >= 3 else None,
+        })
+    return puestas
+
+
 def _muebles(seccion: dict[str, str]) -> list[dict]:
     cuantos = int(_numero(seccion.get("NRFURNS")) or 0)
     muebles = []
@@ -93,6 +105,7 @@ def leer(ruta: str | Path) -> dict:
         puntos = _puntos(seccion)
         poligono = Polygon(puntos) if len(puntos) >= 3 else None
         muebles = _muebles(seccion)
+        puestas = _luminarias(seccion)
         sala = {
             "nombre": seccion.get("NAME") or etiqueta,
             "altura_m": _numero(seccion.get("HEIGHT")),
@@ -113,6 +126,8 @@ def leer(ruta: str | Path) -> dict:
                 sala[clave] = valor
         if muebles:
             sala["muebles"] = muebles
+        if puestas:
+            sala["luminarias_colocadas"] = puestas
         salas.append(sala)
 
     return {

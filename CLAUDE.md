@@ -274,7 +274,9 @@ dialux/norma.py      requisitos_norma y buscar_en_norma: tablas de la UNE-EN 124
 dialux/stf.py        escribir el STF que importa DIALux evo
 dialux/leer_stf.py   leer_stf y comparar_edificios: qué hay dentro y qué cambia entre dos
 dialux/luminarias.py repartir las luminarias de una sala en retícula (dónde van, no cuántas)
-dialux/export_dialux.py  leer el DWG que exporta evo (capas DLX_CALC, DLX_DESC, DLX_CONT, DLX_OBJ)
+dialux/corregir.py   corregir_trabajo: los resultados de DIALux contra lo que exige la norma
+dialux/export_dialux.py  leer el DWG que exporta evo, en sus dos variantes (3D con alturas; 2D
+                     con plantas, luminarias y tablas de resultados)
 dialux/construir.py  construir_edificio: del plano del examen al STF, una planta por fichero
 salida/              los STF generados — no entra en git
 pruebas/             pytest contra los exámenes reales (se saltan si no está material/)

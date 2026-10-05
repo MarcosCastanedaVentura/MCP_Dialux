@@ -41,6 +41,21 @@ def test_fallar_solo_el_em_modificado_no_es_suspender(corregido):
     assert solo_requerido["no_cumple"] == ["U0: 0.53 de 0.6"]
 
 
+def test_sin_la_zona_marginal_del_enunciado_no_se_juzga(corregido):
+    """La práctica pedía 0,5 m y DIALux calculó sobre el plano útil entero: no es lo mismo.
+
+    El fallo de U0 puede desaparecer al dejar fuera la banda de los bordes, que es la más oscura,
+    así que dar la sala por suspensa sería corregir mal.
+    """
+    con_zona = corregir(TRABAJO, {"Aula 1": "44.1"}, zona_marginal_m=0.5)["corregidas"][0]
+    assert con_zona["veredicto"].startswith("No se puede juzgar todavía")
+    assert con_zona["zona_marginal"]["margen_del_calculo_m"] == 0.195
+    assert "U0: 0.53 de 0.6" in con_zona["veredicto"]
+    # Si el enunciado no pide zona marginal, el veredicto es el que sale de los números.
+    assert corregido["corregidas"][0]["veredicto"].startswith("NO cumple")
+    assert "zona_marginal" not in corregido["corregidas"][0]
+
+
 def test_las_salas_sin_luminarias_no_se_corrigen(corregido):
     assert len(corregido["sin_calcular"]) == 14
     pasillo = next(s for s in corregido["sin_calcular"] if s["sala"] == "Local 18")

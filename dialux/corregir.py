@@ -29,6 +29,12 @@ from .export_dialux import leer
 # valor exacto sería inventar precisión. Un 1 % no cambia ningún veredicto de verdad.
 MARGEN = 0.01
 
+# Cuánto puede quedarse corto el margen de la superficie de cálculo respecto a la zona marginal
+# del enunciado antes de decir que ese cálculo no es el que piden. Sin zona marginal, DIALux deja
+# un margen de medio paso de retícula (0,08 a 0,20 m en el trabajo de clase); con 0,5 m puestos,
+# el margen sería 0,5 o más.
+HOLGURA_ZONA_MARGINAL = 0.1  # m
+
 
 def _referencia(nombre: str, referencias: dict[str, str] | None) -> str | None:
     if not referencias:
@@ -67,11 +73,13 @@ def _cumple(medido: float | None, exigido: float | None) -> bool | None:
 
 
 def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
-             usar: str | None = None) -> dict:
+             usar: str | None = None, zona_marginal_m: float | None = None) -> dict:
     """Compara los resultados de un trabajo exportado de DIALux con lo que exige la norma.
 
     `referencias`: la fila de la norma de cada sala, por nombre, p. ej. {"Aula 1": "44.1"}.
     `usar`: "requerido" o "modificado" para quedarse con uno de los dos Ēm; por defecto, los dos.
+    `zona_marginal_m`: la que pide el enunciado. Se compara con la del cálculo: si DIALux ha
+      calculado sobre el plano útil entero, los números no son los que hay que juzgar.
     """
     if Path(ruta).suffix.lower() == ".stf":
         raise ValueError(
@@ -137,10 +145,24 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
             frase = f"U0: {resultados['u0']:g} de {exigido['Uo']:g}"
             (bien if pasa else mal).append(frase)
 
+        # La zona marginal cambia lo que se mide, no el alumbrado: deja fuera la banda de los
+        # bordes, que es la más oscura y donde cae el mínimo. Si el enunciado la pide y el cálculo
+        # no la tiene, los números están medidos sobre otra superficie y un fallo puede no serlo.
+        falta_zona_marginal = (
+            zona_marginal_m is not None and sala.get("margen_calculo_m") is not None
+            and sala["margen_calculo_m"] < zona_marginal_m - HOLGURA_ZONA_MARGINAL)
+
         # Fallar solo el Ēm modificado no es suspender: la norma da los dos valores y en clase no
         # está decidido cuál se usa (ver CLAUDE.md), así que se dice y se deja la decisión.
         graves = [f for f in mal if "modificado" not in f]
-        if graves:
+        if graves and falta_zona_marginal:
+            veredicto = (
+                f"No se puede juzgar todavía: no llega en {'; '.join(graves)}, pero está calculado "
+                f"sobre el plano útil entero (margen de {sala['margen_calculo_m']:g} m) y el "
+                f"enunciado pide una zona marginal de {zona_marginal_m:g} m. Ponla en la "
+                "superficie de cálculo, recalcula y vuelve a pasármelo: al dejar fuera la banda "
+                "de los bordes, que es la más oscura, lo normal es que suba.")
+        elif graves:
             veredicto = "NO cumple: " + "; ".join(graves)
         elif falla_modificado:
             veredicto = ("Cumple el Ēm requerido, pero no el modificado. Cuál de los dos piden en "
@@ -159,6 +181,7 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
                 "e_media_lx": em, "e_min_lx": resultados.get("e_min_lx"),
                 "e_max_lx": resultados.get("e_max_lx"), "u0": resultados.get("u0"),
                 "potencia_especifica_w_m2": sala.get("potencia_especifica_w_m2"),
+                "superficie_calculo_m2": sala.get("superficie_calculo_m2"),
             }.items() if v is not None},
             "exigido": {k: v for k, v in {
                 "Em_requerido_lx": em_requerido, "Em_modificado_lx": em_modificado,
@@ -170,6 +193,13 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
                               "circundante"],
             "veredicto": veredicto,
             "fuente": exigido.get("fuente"),
+            **({"zona_marginal": {
+                "pide_el_enunciado_m": zona_marginal_m,
+                "margen_del_calculo_m": sala.get("margen_calculo_m"),
+                "ojo": "DIALux ha calculado sobre el plano útil entero, sin la zona marginal del "
+                       "enunciado: Ēm y U0 están medidos sobre una superficie que no es la que te "
+                       "van a mirar.",
+            }} if falta_zona_marginal else {}),
             **({"rendimiento_del_local_implicito": _rendimiento(sala, em, tipos)}
                if _rendimiento(sala, em, tipos) else {}),
         })
@@ -185,8 +215,10 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
         "no_se_comprueba_aqui": "Ra, RUGL y las iluminancias de paredes, techo y zona "
                                 "circundante: DIALux las calcula pero no las escribe en las "
                                 "tablas del DWG. Para esas, su informe.",
-        "resumen": (f"{sum(1 for s in salas if not s['veredicto'].startswith('NO'))} sala(s) "
+        "resumen": (f"{sum(1 for s in salas if s['veredicto'].startswith('Cumple'))} sala(s) "
                     f"cumplen, {sum(1 for s in salas if s['veredicto'].startswith('NO'))} no, "
+                    f"{sum(1 for s in salas if s['veredicto'].startswith('No se puede'))} sin "
+                    "poder juzgar, "
                     f"{len(sin_referencia)} sin fila de la norma y "
                     f"{len(sin_calcular)} sin calcular en DIALux."),
     }

@@ -1,9 +1,9 @@
 # Estado del proyecto
 
-Última actualización: **3/10/2026**. Rama actual: `feat/leer-export-2d`.
+Última actualización: **5/10/2026**. Rama actual: `feat/zona-marginal`.
 Publicado en https://github.com/MarcosCastanedaVentura/MCP_Dialux (público, MIT).
 
-**Pruebas: 63 pasan** (lanzadas hoy, 3/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
+**Pruebas: 65 pasan** (lanzadas hoy, 5/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
 menos de un segundo y no tocan la red ni ninguna API de pago). No hay nada en rojo ni ningún apaño
 provisional en el código.
 
@@ -63,9 +63,12 @@ entero: 3 plantas, 15 locales y 20 luminarias. Lo que resolvió:
   z = 0) que trae **la planta de cada sala en el nombre de la capa**, **las luminarias** y **las
   tablas de resultados**. Las dos se leen; cada una avisa de lo que no puede dar.
 - La **regla de colocación** del MCP es la que usa Marcos: validado al milímetro contra su aula.
-- La **corrección** de su aula: Ēm 596 lx sobre 500 requeridos, pero **U₀ = 0,53 con 0,6
-  exigidos**. Medido sobre el plano útil entero y sin zona marginal puesta en su proyecto:
-  pendiente de que diga si la práctica la pedía, porque de ahí sale ese 0,53.
+- La **corrección** de su aula: Ēm 596 lx sobre 500 requeridos, pero U₀ = 0,53 con 0,6 exigidos.
+  **La práctica pedía zona marginal de 0,5 m** (confirmado el 5/10/2026) y su proyecto está
+  calculado sin ella, sobre el plano útil entero. Así que ese 0,53 no es el número que le van a
+  mirar: tiene que poner la zona marginal en la superficie de cálculo, recalcular y volver a
+  pasar el DWG. El corrector lo detecta solo (compara la superficie de cálculo con la sala) y deja
+  la sala en "no se puede juzgar todavía".
 
 ## Lo que se queda a mano en DIALux (y por qué)
 
@@ -108,10 +111,13 @@ importando ficheros, y lo primero confirmado por el soporte de DIAL con la espec
 1. **Importar `salida/plano-ejemplo.stf` en evo 14** y mirar si las luminarias aparecen, dónde y
    como qué (se espera un marcador sin fotometría: la especificación dice que evo ignora los datos
    de la luminaria al importar). Es lo único del trabajo de estos días sin verificar en DIALux.
-2. **Decidir Ēm requerido o modificado** en clase. Mientras no esté decidido, `corregir_trabajo`
+2. **Rehacer el cálculo del aula con la zona marginal de 0,5 m** y volver a exportar, para saber
+   si la uniformidad cumple de verdad. Es lo único que hace falta para cerrar la corrección de ese
+   trabajo.
+3. **Decidir Ēm requerido o modificado** en clase. Mientras no esté decidido, `corregir_trabajo`
    da los dos y no elige.
-3. **Conseguir la fotometría** (.ldt o .ies) para pasar de colocar a calcular cuántas.
-4. **Cuando haya fotometría**: número de luminarias por el método de los lúmenes, y comprobar la
+4. **Conseguir la fotometría** (.ldt o .ies) para pasar de colocar a calcular cuántas.
+5. **Cuando haya fotometría**: número de luminarias por el método de los lúmenes, y comprobar la
    separación contra el criterio de la luminaria (ahora solo se devuelve la relación separación /
    altura útil, sin juzgarla). El rendimiento del local que se despeja de un trabajo ya corregido
    (0,83 en el aula) sirve de contraste mientras llega.

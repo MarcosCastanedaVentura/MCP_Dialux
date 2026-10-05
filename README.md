@@ -207,9 +207,16 @@ calculado— la herramienta devuelve esto del aula:
 | U₀ | 0,53 | 0,60 |
 | Potencia específica | 7,67 W/m² | — |
 
-O sea: la iluminancia sobra y **la uniformidad no llega**, que es exactamente el tipo de fallo que
-uno no ve mirando el render. Los dos Ēm se dan sin elegir: la norma da el requerido y el
-modificado, y cuál piden en clase lo decide el alumno.
+O sea: la iluminancia sobra y la uniformidad no llega… **salvo que ese cálculo no sea el que piden**.
+El enunciado pedía una zona marginal de 0,5 m y el proyecto está calculado sobre el plano útil
+entero, y eso cambia lo que se mide: la zona marginal deja fuera la banda pegada a las paredes, que
+es la más oscura y donde cae el mínimo. La herramienta lo detecta comparando la superficie de
+cálculo con la sala, y en vez de suspender la sala dice que **no se puede juzgar todavía** y qué hay
+que rehacer. Dar por suspenso un trabajo por un cálculo que no es el pedido sería corregir mal, que
+es lo único que esta herramienta no se puede permitir.
+
+Los dos Ēm se dan sin elegir: la norma da el requerido y el modificado, y cuál piden en clase lo
+decide el alumno.
 
 Lo que **no** se puede corregir así, y la herramienta lo dice en cada sala para que nadie crea que
 el trabajo está entero revisado: Ra, RUGL (deslumbramiento) y las iluminancias de paredes, techo y

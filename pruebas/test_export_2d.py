@@ -49,6 +49,15 @@ def test_las_salas_pequenas_van_a_su_cara_y_no_a_la_de_al_lado(trabajo):
     assert bano["area_m2"] == 0.95
 
 
+def test_la_superficie_de_calculo_y_lo_que_se_mete_del_muro(trabajo):
+    """Ese margen NO es la zona marginal: cambia con el tamaño de la sala (medio paso de retícula)."""
+    aula = next(s for s in trabajo["salas"] if s["nombre"] == "Aula 1")
+    assert aula["superficie_calculo_m2"] == 83.24  # frente a 91,23 m² de sala
+    assert aula["margen_calculo_m"] == 0.195
+    cuarto = next(s for s in trabajo["salas"] if s["nombre"] == "Local 12")
+    assert cuarto["margen_calculo_m"] == 0.075
+
+
 def test_no_hay_alturas_y_se_avisa(trabajo):
     assert all(s["altura_m"] is None for s in trabajo["salas"])
     assert any("NO trae la altura" in a for a in trabajo["avisos"])

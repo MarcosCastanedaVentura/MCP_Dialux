@@ -236,6 +236,16 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
     `DLX_FL<n>_CALC` son la retícula de puntos y el borde a trazos. El contorno de las salas sale
     de `DLX_FL<n>_CONT` cerrando huecos, como en los planos de clase.
 
+- **La superficie de cálculo del DWG 2D NO dice la zona marginal, pero sirve para saber si está
+  puesta.** El borde de `DLX_FL<n>_CALC` queda metido respecto al muro, y ese margen **cambia con
+  el tamaño de la sala** (medido el 5/10/2026 en el trabajo de clase: 0,195 m en las aulas de
+  9 × 10 m, 0,075 m en un cuarto de 1 m²), así que es medio paso de la retícula de puntos y no una
+  zona marginal. Lo que sí se puede afirmar: si el margen es claramente menor que la zona marginal
+  del enunciado, **DIALux ha calculado sobre el plano útil entero** y ni Ēm ni U₀ son los números
+  que hay que juzgar. `corregir_trabajo` lo detecta y deja esa sala en "no se puede juzgar
+  todavía" en vez de suspenderla. **La práctica de clase pedía 0,5 m** (dicho por Marcos el
+  5/10/2026) y su trabajo está calculado sin ella.
+
 - **La regla de colocación de luminarias de Marcos es la del centro de casilla** (medido el
   3/10/2026 en su Aula 1: 9,07 × 10,45 m con 20 luminarias en 4 × 5, separación 2,27 × 2,09 m y
   1,13 / 1,04 m a los muros, o sea media separación justa). `dialux/luminarias.py` da lo mismo

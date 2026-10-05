@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from statistics import median
 from pathlib import Path
 
 import ezdxf
@@ -339,6 +340,28 @@ def _luminarias_2d(msp, planta: str) -> list[dict]:
     return puestas
 
 
+def _superficies_calculo(msp, planta: str) -> list[Polygon]:
+    """Las superficies de cálculo (el "plano útil") de una planta, de la capa CALC.
+
+    Van dibujadas a trazos, así que hay que cerrar huecos para que se cierren como cara. El borde
+    NO coincide con el muro: queda metido hacia dentro, y lo que se mide no es la zona marginal
+    sino medio paso de la retícula de puntos, porque el margen cambia con el tamaño de la sala
+    (medido el 5/10/2026 en el trabajo de clase: 0,195 m en las aulas de 9 × 10 m y 0,075 m en un
+    cuarto de 1 m²). Con zona marginal puesta, el margen sería al menos lo que valga la zona.
+    """
+    return [c for c in caras(_segmentos(msp, f"DLX_FL{planta}_CALC")) if c.area > 0.5]
+
+
+def _margen_calculo(sala: Polygon, superficies: list[Polygon]) -> tuple[float, float] | None:
+    """(superficie de cálculo en m², cuánto se mete respecto al muro) de una sala."""
+    dentro = [s for s in superficies if sala.contains(s.representative_point())]
+    if not dentro:
+        return None
+    superficie = max(dentro, key=lambda s: s.area)
+    margen = median(sala.exterior.distance(Point(*p)) for p in superficie.exterior.coords)
+    return round(superficie.area, 2), round(margen, 3)
+
+
 def _nombre_2d(texto: str) -> tuple[str, float | None]:
     """El nombre de la sala y su potencia específica, si DIALux la ha escrito detrás."""
     if m := NOMBRE_CON_POTENCIA.match(texto):
@@ -397,6 +420,7 @@ def _leer_2d(fichero: Path, doc, msp, plantas: list[str]) -> dict:
     salas = []
     for planta in plantas:
         luminarias = _luminarias_2d(msp, planta)
+        superficies = _superficies_calculo(msp, planta)
         for poligono, nombre, potencia in _salas_2d(msp, planta):
             x0, y0, x1, y1 = poligono.bounds
             dentro = [l for l in luminarias
@@ -419,6 +443,8 @@ def _leer_2d(fichero: Path, doc, msp, plantas: list[str]) -> dict:
                 sala["luminarias_colocadas"] = dentro
             if potencia is not None:
                 sala["potencia_especifica_w_m2"] = potencia
+            if medida := _margen_calculo(poligono, superficies):
+                sala["superficie_calculo_m2"], sala["margen_calculo_m"] = medida
             if nombre in resultados:
                 sala["resultados"] = resultados[nombre]
             salas.append(sala)

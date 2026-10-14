@@ -10,10 +10,17 @@ Dos cosas que este módulo NO hace, a propósito:
 - **No elige la fila de la norma.** El local lo decide Marcos: el mismo nombre de sala puede ser
   varias filas, y una fila mal elegida da una corrección mal hecha que parece bien. Si no se le
   pasa la referencia, se buscan candidatas por el nombre y se le preguntan.
-- **No decide entre Ēm requerido y Ēm modificado.** La norma da los dos y en clase no está
-  decidido cuál se usa, así que se dicen los dos y cuál se cumple. Con `usar` se puede forzar uno.
+- **No decide entre Ēm requerido y Ēm modificado.** Por defecto se compara con el **requerido**,
+  que es el criterio que da la profesora de Marcos (14/10/2026): *"si se cumple que el nivel medio
+  es superior al mínimo de la normativa y la uniformidad está entre el mínimo y el medio, te lo
+  marca en verde"*. El modificado se sigue enseñando como información, porque la norma lo da, pero
+  no suspende; con `usar="los dos"` se exigen ambos.
 
-Lo que no se puede comprobar con esto, y se dice en cada sala: Ra, RUGL (deslumbramiento) y las
+Ra y la temperatura de color **sí** se comprueban, pero no porque los calcule DIALux: salen del
+código de color del nombre comercial de la luminaria ("830" = Ra ≥ 80 y 3000 K), que es una
+convención del sector. Se dice de dónde sale para que se pueda confirmar en la ficha.
+
+Lo que no se puede comprobar con esto, y se dice en cada sala: RUGL (deslumbramiento) y las
 iluminancias de paredes, techo y zona circundante. DIALux las calcula, pero no las escribe en las
 tablas de la exportación a DWG; para eso hay que mirar su informe.
 """
@@ -34,6 +41,11 @@ MARGEN = 0.01
 # un margen de medio paso de retícula (0,08 a 0,20 m en el trabajo de clase); con 0,5 m puestos,
 # el margen sería 0,5 o más.
 HOLGURA_ZONA_MARGINAL = 0.1  # m
+
+# Tabla 6 de la norma (página 26 del PDF): grupos de apariencia de color. La norma NO fija una
+# temperatura de color por tipo de local —solo alguna fila concreta, como la 47.5—, así que esto
+# se usa para decir de qué grupo es la lámpara elegida, no para aprobar ni suspender.
+GRUPOS_APARIENCIA = ((3300, "cálida"), (5300, "neutra"), (float("inf"), "fría"))
 
 
 def _referencia(nombre: str, referencias: dict[str, str] | None) -> str | None:
@@ -72,12 +84,17 @@ def _cumple(medido: float | None, exigido: float | None) -> bool | None:
     return medido >= exigido * (1 - MARGEN)
 
 
+def _apariencia(kelvin: float) -> str:
+    return next(nombre for limite, nombre in GRUPOS_APARIENCIA if kelvin < limite)
+
+
 def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
-             usar: str | None = None, zona_marginal_m: float | None = None) -> dict:
+             usar: str = "requerido", zona_marginal_m: float | None = None) -> dict:
     """Compara los resultados de un trabajo exportado de DIALux con lo que exige la norma.
 
     `referencias`: la fila de la norma de cada sala, por nombre, p. ej. {"Aula 1": "44.1"}.
-    `usar`: "requerido" o "modificado" para quedarse con uno de los dos Ēm; por defecto, los dos.
+    `usar`: con qué Ēm de la norma se compara. Por defecto el **requerido**, que es el criterio de
+      clase; "modificado" para el otro y "los dos" para exigir ambos.
     `zona_marginal_m`: la que pide el enunciado. Se compara con la del cálculo: si DIALux ha
       calculado sobre el plano útil entero, los números no son los que hay que juzgar.
     """
@@ -145,6 +162,13 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
             frase = f"U0: {resultados['u0']:g} de {exigido['Uo']:g}"
             (bien if pasa else mal).append(frase)
 
+        # Ra de la lámpara elegida contra el de la tabla, con el código de color del nombre.
+        color = _color_de(sala, tipos)
+        if (pasa := _cumple(color.get("ra_del_codigo"), exigido.get("Ra"))) is not None:
+            frase = (f"Ra: {color['ra_del_codigo']}+ de {exigido['Ra']:g} "
+                     f"(código {color['codigo_de_color']})")
+            (bien if pasa else mal).append(frase)
+
         # La zona marginal cambia lo que se mide, no el alumbrado: deja fuera la banda de los
         # bordes, que es la más oscura y donde cae el mínimo. Si el enunciado la pide y el cálculo
         # no la tiene, los números están medidos sobre otra superficie y un fallo puede no serlo.
@@ -189,8 +213,17 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
             }.items() if v is not None},
             "cumple": bien,
             "no_cumple": mal,
-            "sin_comprobar": ["Ra", "RUGL (deslumbramiento)", "Ēm de paredes, techo y zona "
-                              "circundante"],
+            **({"lampara": {
+                **{k: v for k, v in color.items() if k != "de_donde_sale"},
+                "apariencia_de_color": _apariencia(color["temperatura_color_k"]),
+                "nota": "La norma agrupa la apariencia de color en su tabla 6 (página 26): cálida "
+                        "por debajo de 3300 K, neutra hasta 5300 K y fría por encima. No fija una "
+                        "temperatura por tipo de local, así que esto es información, no un "
+                        "requisito. " + color["de_donde_sale"],
+            }} if color else {}),
+            "sin_comprobar": (["Ra (el fichero no dice qué lámpara es)"] if not color else [])
+                             + ["RUGL (deslumbramiento)",
+                                "Ēm de paredes, techo y zona circundante"],
             "veredicto": veredicto,
             "fuente": exigido.get("fuente"),
             **({"zona_marginal": {
@@ -222,6 +255,17 @@ def corregir(ruta: str | Path, referencias: dict[str, str] | None = None,
                     f"{len(sin_referencia)} sin fila de la norma y "
                     f"{len(sin_calcular)} sin calcular en DIALux."),
     }
+
+
+def _color_de(sala: dict, tipos: list[dict]) -> dict:
+    """Ra y temperatura de color de la luminaria que hay en esa sala, si se han podido deducir."""
+    puestas = sala.get("luminarias_colocadas") or []
+    if not puestas or not tipos:
+        return {}
+    indice = puestas[0]["tipo"].split()[-1]
+    tipo = next((t for t in tipos if str(t.get("indice")) == indice), tipos[0])
+    return {k: tipo[k] for k in ("codigo_de_color", "ra_del_codigo", "temperatura_color_k",
+                                 "de_donde_sale") if k in tipo}
 
 
 def _rendimiento(sala: dict, em: float, tipos: list[dict]) -> float | None:

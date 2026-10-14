@@ -75,6 +75,12 @@ NOMBRE_SIN_CALCULAR = re.compile(r"^(.*?)\s*\(/\)\s*$")
 # clase está a 2,09 m de la siguiente, así que hay margen de sobra.
 TOLERANCIA_SIMBOLO = 0.1  # m
 
+# El código de color del nombre comercial de una luminaria: "830" son Ra ≥ 80 y 3000 K, "940" son
+# Ra ≥ 90 y 4000 K. Es la convención del sector, no un dato medido, así que se devuelve diciendo de
+# dónde sale. Se exige que sean tres cifras sueltas para no confundirlo con "4400lm" ni con
+# "60x60".
+CODIGO_COLOR = re.compile(r"(?<!\d)([89])([0-6]\d)(?!\d)")
+
 # "Plano útil (Aula 1)" -> de qué sala son esos resultados.
 SALA_DEL_RESULTADO = re.compile(r"\((.+)\)\s*$")
 
@@ -288,6 +294,17 @@ def _filas(tabla) -> list[dict]:
     return filas
 
 
+def _color(articulo: str) -> dict:
+    """Ra y temperatura de color deducidos del código del nombre del artículo, si lo lleva."""
+    if not articulo or not (m := CODIGO_COLOR.search(articulo)):
+        return {}
+    return {"codigo_de_color": m.group(0),
+            "ra_del_codigo": int(m.group(1)) * 10,
+            "temperatura_color_k": int(m.group(2)) * 100,
+            "de_donde_sale": f"del código {m.group(0)} del nombre del artículo, que es la "
+                             "convención del sector; confírmalo en la ficha de la luminaria"}
+
+
 def _tablas(msp) -> tuple[list[dict], dict[str, dict]]:
     """(lista de luminarias del proyecto, resultados por sala) de las tablas del DWG."""
     luminarias: list[dict] = []
@@ -295,6 +312,7 @@ def _tablas(msp) -> tuple[list[dict], dict[str, dict]]:
     for tabla in msp.query("ACAD_TABLE"):
         for fila in _filas(tabla):
             if "fabricante" in fila:
+                fila |= _color(fila.get("articulo", ""))
                 if fila not in luminarias:
                     luminarias.append(fila)
             elif superficie := fila.pop("superficie", None):

@@ -1,9 +1,14 @@
 # Estado del proyecto
 
-Última actualización: **5/10/2026**. Rama actual: `feat/zona-marginal`.
+> **ENTREGA DEL TRABAJO: 15/10/2026** (dicho por la profesora). Hay que entregar una **sala de
+> preparación** en la planta 0, y un **baño** y la **conserjería** en la planta 1, con su
+> iluminación calculada. Lo que se mira es el cálculo: cantidad de luz y uniformidad. Filas de la
+> norma y valores exigidos, más abajo.
+
+Última actualización: **14/10/2026**. Rama actual: `feat/criterio-profesora`.
 Publicado en https://github.com/MarcosCastanedaVentura/MCP_Dialux (público, MIT).
 
-**Pruebas: 65 pasan** (lanzadas hoy, 5/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
+**Pruebas: 66 pasan** (lanzadas hoy, 14/10/2026, `.venv/bin/python -m pytest -q pruebas`; tardan
 menos de un segundo y no tocan la red ni ninguna API de pago). No hay nada en rojo ni ningún apaño
 provisional en el código.
 
@@ -46,8 +51,8 @@ Son dos cosas distintas y solo está hecha la primera:
    `material/luminarias/` son PDF y **no traen la curva de distribución**: sin ella no se puede
    calcular cuántas hacen falta. Caminos: "Enviar a DIALux" desde `luminaires.dialux.com` en la
    VM, o la web del fabricante (la primera es Endo Lighting, modelo `ERD7616S`).
-2. **Ēm requerido o Ēm modificado**: la norma da los dos (Archivos, 200 lx o 300 lx) y de eso
-   depende el número de luminarias. Marcos tiene que decir cuál usan en clase.
+2. ~~Ēm requerido o modificado~~: **resuelto el 14/10/2026**. El criterio de clase es el
+   requerido (el mínimo de la norma) más la uniformidad de la tabla.
 3. ~~Si el DWG exportado trae las luminarias~~: **resuelto el 3/10/2026** con el trabajo de
    clase. Sí las trae, en la capa `DLX_FL<planta>_LUM <indice>`, y además trae las tablas de
    resultados de DIALux. De ahí sale `corregir_trabajo`.
@@ -69,6 +74,20 @@ entero: 3 plantas, 15 locales y 20 luminarias. Lo que resolvió:
   mirar: tiene que poner la zona marginal en la superficie de cálculo, recalcular y volver a
   pasar el DWG. El corrector lo detecta solo (compara la superficie de cálculo con la sala) y deja
   la sala en "no se puede juzgar todavía".
+
+## El trabajo que hay que entregar el 15/10/2026
+
+Tres salas con su iluminación. Las filas de la norma salen de buscar el uso que dijo la profesora:
+
+| Sala | Fila | Ēm requerido | U₀ | Ra | RUGL | Página del PDF |
+|---|---|---|---|---|---|---|
+| Sala de preparación (planta 0) | 44.17 Aulas de preparación y talleres | 500 lx | 0,6 | 80 | 22 | 73 |
+| Baño (planta 1) | 10.4 Baños, vestuarios, duchas y aseos | 200 lx | 0,4 | 80 | 25 | 40 |
+| Conserjería (planta 1) | 37.1 Recepción/caja, conserjería | 300 lx | 0,6 | 80 | 22 | 64 |
+
+El criterio de la profesora: **Ēm medio por encima del mínimo de la norma** (el requerido, no el
+modificado) **y la uniformidad por encima de la suya**. Y la zona marginal de 0,5 m puesta en la
+superficie de cálculo antes de calcular, que es donde se torció el trabajo anterior.
 
 ## Lo que se queda a mano en DIALux (y por qué)
 
@@ -114,7 +133,7 @@ importando ficheros, y lo primero confirmado por el soporte de DIAL con la espec
 2. **Rehacer el cálculo del aula con la zona marginal de 0,5 m** y volver a exportar, para saber
    si la uniformidad cumple de verdad. Es lo único que hace falta para cerrar la corrección de ese
    trabajo.
-3. **Decidir Ēm requerido o modificado** en clase. Mientras no esté decidido, `corregir_trabajo`
+3. ~~Decidir Ēm requerido o modificado~~: **resuelto el 14/10/2026**, es el requerido. Mientras no esté decidido, `corregir_trabajo`
    da los dos y no elige.
 4. **Conseguir la fotometría** (.ldt o .ies) para pasar de colocar a calcular cuántas.
 5. **Cuando haya fotometría**: número de luminarias por el método de los lúmenes, y comprobar la

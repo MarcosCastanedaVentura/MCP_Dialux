@@ -100,7 +100,21 @@ y las compara. La cadena es `leer_plano` + `requisitos_norma` -> STF.
   costaron filas: columnas en distinta posición en cada tabla, **incluso en la misma página** (se
   localizan por la cabecera de cada tabla), y miles escritos "1 000" o "1000".
 - Cada fila tiene Ēm **requerido** (mínimo) y **modificado** (con los modificadores de contexto
-  del 5.3.3). Cuál vale en clase no está decidido: pendiente de preguntar a Marcos.
+  del 5.3.3). **DECIDIDO el 14/10/2026 con lo que explicó la profesora:** el criterio es el
+  **requerido**, que es "el mínimo de la normativa", más la uniformidad de la tabla. Sus palabras:
+  *"si se cumple que el nivel medio es superior al mínimo de la normativa y la uniformidad está
+  entre el mínimo y el medio, te lo marca en verde"* (eso último es el indicador verde/rojo de
+  DIALux). Por eso `corregir_trabajo` usa `usar="requerido"` por defecto; el modificado se sigue
+  enseñando como información y con `usar="los dos"` se exigen ambos.
+- **La lámpara se elige por Ra y temperatura de color**, y la profesora lo pide expresamente. El Ra
+  está en la tabla de cada fila; la temperatura de color **no**: la norma solo agrupa la apariencia
+  en su tabla 6 (página 26 del PDF: cálida < 3300 K, neutra hasta 5300 K, fría por encima) y la fija
+  en filas sueltas (la 47.5 pide 2200–3000 K). El nombre comercial trae el código de color
+  ("MOLNPRO 60x60 4400lm **830** MP K" = Ra ≥ 80 y 3000 K): de ahí los saca `corregir_trabajo`,
+  diciendo que es una convención del sector y que se confirme en la ficha.
+- **La profesora coloca las luminarias con "disposición automática" de DIALux**, que es
+  exactamente la retícula de centro de casilla de `luminarias.py` (coincide al milímetro con su
+  aula). O sea que el MCP coloca como se coloca en clase.
 - No todos los enunciados dan la referencia: el parcial no dice el local y enero dice "sala para
   actividad sanitaria (iluminación general)". La fila de la tabla en esos casos **la decide
   Marcos**, no el código. **Decidido por Marcos el 16/9/2026: 10.6 (Enfermería) en los dos.**

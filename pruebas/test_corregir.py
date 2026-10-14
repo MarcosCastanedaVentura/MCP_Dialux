@@ -27,18 +27,35 @@ def test_el_aula_cumple_la_iluminancia_y_no_la_uniformidad(corregido):
     assert aula["referencia"] == "44.1" and aula["planta"] == "Planta 1"
     assert aula["medido"]["e_media_lx"] == 596 and aula["medido"]["u0"] == 0.53
     assert aula["exigido"]["Em_requerido_lx"] == 500 and aula["exigido"]["Uo"] == 0.6
-    assert aula["cumple"] == ["Ēm requerido: 596 lx de 500 lx"]
+    assert aula["cumple"] == ["Ēm requerido: 596 lx de 500 lx",
+                              "Ra: 80+ de 80 (código 830)"]
     assert aula["veredicto"].startswith("NO cumple") and "U0" in aula["veredicto"]
     # La corrección cita de dónde sale el valor exigido, para poder revisarla.
     assert "fila 44.1, página 70" in aula["fuente"]
 
 
-def test_fallar_solo_el_em_modificado_no_es_suspender(corregido):
-    """La norma da los dos Ēm y en clase no está decidido cuál se usa: se dice, no se elige."""
+def test_el_criterio_por_defecto_es_el_em_requerido(corregido):
+    """El de clase (profesora, 14/10/2026): el nivel medio por encima del mínimo de la norma.
+
+    El modificado se sigue enseñando porque la norma lo da, pero no suspende: el aula tiene 596 lx
+    y el modificado de esa fila son 1000.
+    """
     aula = corregido["corregidas"][0]
-    assert "Ēm modificado: 596 lx de 1000 lx" in aula["no_cumple"]
-    solo_requerido = corregir(TRABAJO, {"Aula 1": "44.1"}, usar="requerido")["corregidas"][0]
-    assert solo_requerido["no_cumple"] == ["U0: 0.53 de 0.6"]
+    assert aula["no_cumple"] == ["U0: 0.53 de 0.6"]
+    assert aula["exigido"]["Em_modificado_lx"] == 1000
+    # Pidiendo los dos, el modificado vuelve a contar.
+    ambos = corregir(TRABAJO, {"Aula 1": "44.1"}, usar="los dos")["corregidas"][0]
+    assert "Ēm modificado: 596 lx de 1000 lx" in ambos["no_cumple"]
+
+
+def test_la_lampara_se_comprueba_con_el_codigo_de_color(corregido):
+    """"MOLNPRO 60x60 4400lm 830 MP K": el 830 son Ra ≥ 80 y 3000 K, convención del sector."""
+    lampara = corregido["corregidas"][0]["lampara"]
+    assert lampara["ra_del_codigo"] == 80 and lampara["temperatura_color_k"] == 3000
+    assert lampara["apariencia_de_color"] == "cálida"  # tabla 6 de la norma, página 26
+    assert "Ra: 80+ de 80 (código 830)" in corregido["corregidas"][0]["cumple"]
+    # Y se dice que es deducido del nombre, no medido.
+    assert "convención del sector" in lampara["nota"]
 
 
 def test_sin_la_zona_marginal_del_enunciado_no_se_juzga(corregido):

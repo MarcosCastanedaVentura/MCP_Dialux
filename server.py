@@ -142,15 +142,16 @@ def comparar_edificios(ruta_a: str, ruta_b: str) -> dict:
 
 @mcp.tool()
 def corregir_trabajo(ruta: str, referencias: dict[str, str] | None = None,
-                     usar: str | None = None, zona_marginal_m: float | None = None) -> dict:
+                     usar: str = "requerido", zona_marginal_m: float | None = None) -> dict:
     """Corrige un trabajo de DIALux contra la UNE-EN 12464-1, sala por sala.
 
     ruta: el .dwg que el alumno ha exportado de DIALux **después de calcular** (Exportar →
       Exportar en un archivo nuevo). Los resultados salen de las tablas que DIALux escribe dentro
       de ese DWG; un .stf no sirve, porque no lleva resultados.
     referencias: la fila de la norma de cada sala, por nombre, p. ej. {"Aula 1": "44.1"}.
-    usar: "requerido" o "modificado" para quedarse con uno de los dos Ēm. Por defecto se dan los
-      dos, porque la norma da los dos y en clase no está decidido cuál se usa.
+    usar: con qué Ēm de la norma se compara. Por defecto el **requerido**, que es el criterio de
+      clase: el nivel medio tiene que superar el mínimo de la normativa y la uniformidad el suyo.
+      "modificado" para el otro, "los dos" para exigir ambos.
     zona_marginal_m: la zona marginal que pide el enunciado, si la pide. **Pregúntasela al
       alumno**: cambia lo que se mide. Se compara con la superficie sobre la que ha calculado
       DIALux, y si ha calculado sobre el plano útil entero, el veredicto de esa sala queda en "no

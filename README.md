@@ -215,8 +215,13 @@ cálculo con la sala, y en vez de suspender la sala dice que **no se puede juzga
 que rehacer. Dar por suspenso un trabajo por un cálculo que no es el pedido sería corregir mal, que
 es lo único que esta herramienta no se puede permitir.
 
-Los dos Ēm se dan sin elegir: la norma da el requerido y el modificado, y cuál piden en clase lo
-decide el alumno.
+El Ēm con el que se compara es el **requerido** (el mínimo de la tabla), que es el criterio con el
+que se corrige en clase; el modificado se enseña como información y se puede exigir también.
+
+Y se comprueba la **lámpara**: el código de color del nombre comercial ("MOLNPRO 60x60 4400lm
+**830** MP K") da Ra ≥ 80 y 3000 K, así que el Ra se contrasta con el de la tabla y la temperatura
+de color se clasifica según la tabla 6 de la norma (cálida, neutra o fría). Es una convención del
+sector, no un dato medido, y la herramienta lo dice para que se confirme en la ficha.
 
 Lo que **no** se puede corregir así, y la herramienta lo dice en cada sala para que nadie crea que
 el trabajo está entero revisado: Ra, RUGL (deslumbramiento) y las iluminancias de paredes, techo y

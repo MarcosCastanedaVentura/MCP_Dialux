@@ -64,7 +64,11 @@ CAPA_OBJETOS = "DLX_OBJ"
 
 # Variante 2D: las mismas capas, pero con la planta por delante.
 PLANTA = re.compile(r"^DLX_FL(\d+)_(CALC|CONT|DESC|OBJ)$", re.IGNORECASE)
-CAPA_LUMINARIAS = re.compile(r"^DLX_FL(\d+)_LUM\s*(\d+)$", re.IGNORECASE)
+# El número del final es el índice del tipo de luminaria, y **solo aparece si la luminaria tiene
+# designación**: en el trabajo de clase de Marcos, con designación, la capa es "DLX_FL1_LUM 1"; sin
+# ella, "DLX_FL1_LUM" a secas (medido el 15/10/2026). Si se exige el número, las luminarias no se
+# encuentran y la sala sale con cero.
+CAPA_LUMINARIAS = re.compile(r"^DLX_FL(\d+)_LUM(?:\s*(\d+))?$", re.IGNORECASE)
 
 # "Aula 1 (7.67 W/m²)" -> el nombre y la potencia específica que DIALux ya ha calculado. Las salas
 # sin luminarias llevan "(/)".
@@ -331,6 +335,20 @@ def _luminarias_2d(msp, planta: str) -> list[dict]:
     esquina del símbolo (medido el 3/10/2026: +0,30 m en x y en y para un panel de 60×60).
     """
     puestas: list[dict] = []
+    # Según cómo se exporte, una luminaria es un dibujo de polilíneas o un bloque (INSERT). Con
+    # bloques basta su punto de inserción, y se quitan los repetidos: DIALux puede escribir varios
+    # bloques por luminaria y, si se ha exportado más de una vez al mismo fichero, duplicarlo todo.
+    for capa in msp.doc.layers:
+        coincide = CAPA_LUMINARIAS.match(capa.dxf.name)
+        if not coincide or coincide.group(1) != planta:
+            continue
+        por_punto: dict[tuple[float, float], str] = {}
+        for bloque in msp.query(f"INSERT[layer=='{capa.dxf.name}']"):
+            x, y, _ = bloque.dxf.insert
+            por_punto[(round(x, 2), round(y, 2))] = coincide.group(2) or "sin designar"
+        for (x, y), indice in sorted(por_punto.items()):
+            puestas.append({"tipo": f"Luminaria {indice}", "posicion_m": [x, y]})
+
     for capa in msp.doc.layers:
         coincide = CAPA_LUMINARIAS.match(capa.dxf.name)
         if not coincide or coincide.group(1) != planta:
@@ -351,7 +369,7 @@ def _luminarias_2d(msp, planta: str) -> list[dict]:
             cajas = [p.bounds for p in grupo]
             x0, y0 = min(c[0] for c in cajas), min(c[1] for c in cajas)
             x1, y1 = max(c[2] for c in cajas), max(c[3] for c in cajas)
-            puestas.append({"tipo": f"Luminaria {coincide.group(2)}",
+            puestas.append({"tipo": f"Luminaria {coincide.group(2) or 'sin designar'}",
                             "posicion_m": [round((x0 + x1) / 2, 3), round((y0 + y1) / 2, 3)],
                             "tamano_m": [round(x1 - x0, 3), round(y1 - y0, 3)]})
         puestas.sort(key=lambda l: (l["posicion_m"][1], l["posicion_m"][0]))
@@ -389,6 +407,9 @@ def _nombre_2d(texto: str) -> tuple[str, float | None]:
     return texto.strip(), None
 
 
+avisos_copias: list[str] = []
+
+
 def _salas_2d(msp, planta: str) -> list[tuple[Polygon, str, float | None]]:
     """Las salas de una planta, con su nombre. El contorno sale de los muros.
 
@@ -405,6 +426,21 @@ def _salas_2d(msp, planta: str) -> list[tuple[Polygon, str, float | None]]:
                             for d in poligonos)]
     etiquetas = [(t.get_placement()[1], t.dxf.text)
                  for t in msp.query(f"TEXT[layer=='DLX_FL{planta}_DESC']")]
+    # Un DWG puede traer el plano dibujado varias veces y desplazado: medido el 15/10/2026 en el
+    # trabajo de clase, la planta 1 venía por duplicado con un desfase de 19 m y la planta 0 por
+    # triplicado. Como DIALux no repite el nombre de un local dentro de una planta, se conserva
+    # solo la primera aparición de cada rótulo; si no, cada sala sale tantas veces como copias.
+    vistos: set[str] = set()
+    unicas = []
+    for punto, texto in etiquetas:
+        if texto not in vistos:
+            vistos.add(texto)
+            unicas.append((punto, texto))
+    if len(etiquetas) > len(unicas):
+        copias = round(len(etiquetas) / max(len(unicas), 1))
+        avisos_copias.append(f"La planta {planta} viene dibujada {copias} veces en el fichero; se "
+                             "ha leído una sola copia.")
+    etiquetas = unicas
 
     # **Las salas las manda el rótulo**: DIALux escribe uno por sala con su nombre, y una cara sin
     # rótulo no es una sala (en el trabajo de clase, los muros de la planta 2 son el peto de la
@@ -435,6 +471,7 @@ def _salas_2d(msp, planta: str) -> list[tuple[Polygon, str, float | None]]:
 def _leer_2d(fichero: Path, doc, msp, plantas: list[str]) -> dict:
     """La variante 2D: plantas, luminarias y resultados, pero sin alturas."""
     tipos, resultados = _tablas(msp)
+    avisos_copias.clear()
     salas = []
     for planta in plantas:
         luminarias = _luminarias_2d(msp, planta)
@@ -467,7 +504,7 @@ def _leer_2d(fichero: Path, doc, msp, plantas: list[str]) -> dict:
                 sala["resultados"] = resultados[nombre]
             salas.append(sala)
 
-    avisos = ["Esta exportación es la 2D: todo está a z = 0, así que NO trae la altura de las "
+    avisos = avisos_copias + ["Esta exportación es la 2D: todo está a z = 0, así que NO trae la altura de las "
               "salas ni el plano de trabajo. Para comparar alturas hace falta exportar en 3D."]
     if not tipos:
         avisos.append("No se han entendido las tablas de resultados del DWG. Se leen por el "
